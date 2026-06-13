@@ -1,0 +1,26 @@
+@import 'tailwindcss';
+
+/* Saarthi design tokens — a calm, trust-first banking palette (YONO-ish). */
+@theme {
+  --color-yono-ink: #0b1f3a;
+  --color-yono-blue: #1755c4;
+  --color-yono-sky: #3d8bff;
+  --color-yono-mint: #0fb98a;
+  --color-yono-amber: #f5a524;
+  --color-yono-paper: #f4f6fb;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-yono-paper);
+  color: var(--color-yono-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

@@ -1,0 +1,13 @@
+# --- Web layer ---
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9
+
+# --- Agent core ---
+anthropic>=0.40
+python-dotenv>=1.0
+
+# --- RAG (lightweight; TF-IDF cosine retrieval over the small corpus) ---
+# Upgrade path documented in README: swap for faiss-cpu + sentence-transformers.
+scikit-learn>=1.5
+numpy>=1.26
