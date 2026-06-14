@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react'
-import { api, type Moment, type Persona, type Txn } from './lib/api'
+import {
+  api,
+  type AgentDecision,
+  type Comparison,
+  type Persona,
+  type Txn,
+} from './lib/api'
 import { NudgeCard } from './components/NudgeCard'
+import { ComparisonTable } from './components/ComparisonTable'
+import { ConsentGate } from './components/ConsentGate'
+import { AgentDecisionLog } from './components/AgentDecisionLog'
 
-// Which detected moment becomes the hero nudge (highest-value first).
-const MOMENT_PRIORITY = ['premium_leak', 'idle_balance', 'contextual_spend', 'salary_jump']
-
-function pickHero(moments: Moment[]): Moment | null {
-  for (const type of MOMENT_PRIORITY) {
-    const m = moments.find((x) => x.trigger_type === type)
-    if (m) return m
-  }
-  return moments[0] ?? null
-}
+type Lang = 'en' | 'hi'
 
 const FLOW_LABEL: Record<Persona['flow'], string> = {
   A: 'Idle balance → Sweep FD',
@@ -63,8 +63,11 @@ export default function App() {
   const [personas, setPersonas] = useState<Persona[]>([])
   const [activeId, setActiveId] = useState<string>('')
   const [txns, setTxns] = useState<Txn[]>([])
-  const [hero, setHero] = useState<Moment | null>(null)
+  const [decision, setDecision] = useState<AgentDecision | null>(null)
+  const [lang, setLang] = useState<Lang>('en')
+  const [consented, setConsented] = useState(false)
   const [skipped, setSkipped] = useState(false)
+  const [comparison, setComparison] = useState<Comparison | null>(null)
   const [error, setError] = useState<string>('')
 
   useEffect(() => {
@@ -80,21 +83,69 @@ export default function App() {
   useEffect(() => {
     if (!activeId) return
     setSkipped(false)
-    setHero(null)
+    setConsented(false)
+    setComparison(null)
+    setDecision(null)
+    const persona = personas.find((p) => p.persona_id === activeId)
+    if (persona) setLang(persona.language_pref)
     api
       .transactions(activeId)
       .then((r) => setTxns(r.transactions.slice().reverse()))
       .catch((e) => setError(String(e)))
     api
-      .triggers(activeId)
-      .then((r) => setHero(pickHero(r.moments)))
+      .nudge(activeId)
+      .then(setDecision)
       .catch((e) => setError(String(e)))
-  }, [activeId])
+  }, [activeId, personas])
 
   const active = personas.find((p) => p.persona_id === activeId)
 
+  function record(outcome: 'adopted' | 'skipped' | 'escalated') {
+    const tt = decision?.surfaced_moment?.trigger_type
+    if (activeId && tt) api.feedback(activeId, tt, outcome).catch(() => {})
+  }
+
+  function handleSkip() {
+    record('skipped') // teaches the agent to suppress this category next time
+    setSkipped(true)
+  }
+
+  function handlePrimary() {
+    record('adopted')
+    if (decision?.surfaced_moment?.suggested_category === 'insurance_compare') {
+      api
+        .comparison(activeId)
+        .then((r) => setComparison(r.comparison))
+        .catch((e) => setError(String(e)))
+    }
+  }
+
+  const showNudge = decision?.action === 'surface' && decision.surfaced_moment && !skipped
+
+  let overlay: React.ReactNode = null
+  if (comparison) {
+    overlay = <ComparisonTable data={comparison} onBack={() => setComparison(null)} />
+  } else if (showNudge && decision) {
+    overlay = consented ? (
+      <NudgeCard
+        decision={decision}
+        lang={lang}
+        onLang={setLang}
+        onSkip={handleSkip}
+        onPrimary={handlePrimary}
+      />
+    ) : (
+      <ConsentGate
+        moment={decision.surfaced_moment!}
+        lang={lang}
+        onAllow={() => setConsented(true)}
+        onDecline={handleSkip}
+      />
+    )
+  }
+
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col items-center gap-8 px-6 py-10">
+    <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center gap-8 px-6 py-10">
       <header className="text-center">
         <h1 className="text-3xl font-bold tracking-tight text-yono-ink">
           Saarthi <span className="text-yono-blue">·</span>{' '}
@@ -114,8 +165,8 @@ export default function App() {
       )}
 
       <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-start">
-        {/* Persona switcher (demo control, sits outside the phone) */}
-        <aside className="w-[300px] shrink-0">
+        {/* Persona switcher */}
+        <aside className="w-[280px] shrink-0">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
             Demo persona
           </p>
@@ -139,9 +190,7 @@ export default function App() {
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">{p.blurb}</p>
-                  <p className="mt-1.5 text-[11px] font-medium text-yono-blue">
-                    {FLOW_LABEL[p.flow]}
-                  </p>
+                  <p className="mt-1.5 text-[11px] font-medium text-yono-blue">{FLOW_LABEL[p.flow]}</p>
                 </button>
               )
             })}
@@ -149,14 +198,9 @@ export default function App() {
         </aside>
 
         {/* The mocked YONO phone */}
-        <PhoneFrame
-          overlay={
-            hero && !skipped ? <NudgeCard moment={hero} onSkip={() => setSkipped(true)} /> : null
-          }
-        >
+        <PhoneFrame overlay={overlay}>
           {active && (
             <div className="flex min-h-full flex-col bg-gradient-to-b from-yono-blue to-yono-sky">
-              {/* App top bar */}
               <div className="flex items-center justify-between px-5 pb-3 pt-9 text-white">
                 <div>
                   <p className="text-xs/none opacity-80">Good morning</p>
@@ -167,7 +211,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Balance card */}
               <div className="mx-5 rounded-2xl bg-white/15 p-4 text-white backdrop-blur">
                 <p className="text-xs opacity-80">Savings A/C ···{active.persona_id.slice(-2)}21</p>
                 <p className="mt-1 text-3xl font-bold">₹{rupee(active.current_balance)}</p>
@@ -176,7 +219,6 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Body sheet */}
               <div className="mt-4 flex-1 rounded-t-3xl bg-white px-5 pt-5">
                 <div className="grid grid-cols-3 gap-3">
                   {QUICK_ACTIONS.map((q) => (
@@ -184,9 +226,7 @@ export default function App() {
                       <div className="grid h-12 w-12 place-items-center rounded-2xl bg-yono-paper text-yono-blue">
                         <span className="text-[10px] font-bold">UPI</span>
                       </div>
-                      <span className="text-center text-[11px] leading-tight text-slate-600">
-                        {q}
-                      </span>
+                      <span className="text-center text-[11px] leading-tight text-slate-600">{q}</span>
                     </div>
                   ))}
                 </div>
@@ -206,10 +246,13 @@ export default function App() {
             </div>
           )}
         </PhoneFrame>
+
+        {/* Agent decision loop */}
+        {decision && <AgentDecisionLog decision={decision} />}
       </div>
 
       <footer className="text-xs text-slate-400">
-        Milestone 1 · app shell + synthetic data. Nudge engine, agent loop & XAI card next.
+        Perceive → reason → act loop · grounded in a cited corpus · ULIPs auto-blocked · synthetic data
       </footer>
     </div>
   )

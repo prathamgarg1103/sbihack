@@ -13,8 +13,17 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from pydantic import BaseModel
+
 import config
-from engine import triggers
+from engine import agent, comparison, feedback, rag, triggers
+from models import TriggerType
+
+
+class FeedbackIn(BaseModel):
+    persona_id: str
+    trigger_type: str
+    outcome: str  # adopted | skipped | escalated
 
 app = FastAPI(
     title="Saarthi — Agentic Adoption Copilot",
@@ -52,6 +61,13 @@ def _require_persona(data: dict[str, Any], persona_id: str) -> list[dict[str, An
     if txns is None:
         raise HTTPException(status_code=404, detail=f"Unknown persona '{persona_id}'")
     return txns
+
+
+def _persona_meta(data: dict[str, Any], persona_id: str) -> dict[str, Any]:
+    meta = next((p for p in data["personas"] if p["persona_id"] == persona_id), None)
+    if meta is None:
+        raise HTTPException(status_code=404, detail=f"Unknown persona '{persona_id}'")
+    return meta
 
 
 @app.get("/health")
@@ -106,3 +122,65 @@ def all_triggers() -> dict[str, Any]:
     for persona_id, txns in data["transactions"].items():
         out[persona_id] = [m.model_dump() for m in triggers.detect_all(persona_id, txns, now)]
     return {"generated_at": data["generated_at"], "triggers": out}
+
+
+@app.get("/rag")
+def rag_search(q: str, k: int = 3) -> dict[str, Any]:
+    """Grounded retrieval over the corpus — anti-hallucination layer / demo probe."""
+    return {"query": q, "results": rag.query_rag(q, k)}
+
+
+@app.get("/personas/{persona_id}/nudge")
+def persona_nudge(persona_id: str) -> dict[str, Any]:
+    """Run the agent loop over a persona's detected moments -> one decision.
+
+    The agent decides whether to surface, picks + suitability-checks a product,
+    grounds it, drafts the bilingual nudge, and returns its full decision log.
+    """
+    data = _load_dataset()
+    txns = _require_persona(data, persona_id)
+    meta = _persona_meta(data, persona_id)
+    moments = [
+        m.model_dump(mode="json") for m in triggers.detect_all(persona_id, txns, _dataset_now(data))
+    ]
+    skipped_types = feedback.skipped_categories(persona_id)
+    return agent.run_agent(meta, moments, skipped_types=skipped_types)
+
+
+@app.post("/feedback")
+def post_feedback(fb: FeedbackIn) -> dict[str, Any]:
+    """Record an outcome (adopted/skipped/escalated) — closes the learn loop."""
+    try:
+        rec = feedback.record(fb.persona_id, fb.trigger_type, fb.outcome)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {"recorded": rec, "summary": feedback.summary(fb.persona_id)}
+
+
+@app.delete("/feedback/{persona_id}")
+def reset_feedback(persona_id: str) -> dict[str, Any]:
+    """Clear feedback for a persona — handy to re-run the demo cleanly."""
+    feedback.reset(persona_id)
+    return {"reset": persona_id}
+
+
+@app.get("/personas/{persona_id}/comparison")
+def persona_comparison(persona_id: str) -> dict[str, Any]:
+    """Honest side-by-side comparison for a persona with a premium-leak moment.
+
+    Derives the competitor from the detected trigger, then grounds every figure
+    in the corpus (incl. at least one row where the competitor wins).
+    """
+    data = _load_dataset()
+    txns = _require_persona(data, persona_id)
+    moments = triggers.detect_all(persona_id, txns, _dataset_now(data))
+    leak = next((m for m in moments if m.trigger_type is TriggerType.PREMIUM_LEAK), None)
+    if leak is None:
+        raise HTTPException(
+            status_code=409,
+            detail=f"No premium-leak moment for '{persona_id}' to compare against.",
+        )
+    result = comparison.build_insurance_comparison(leak.evidence.get("competitor"))
+    if result is None:
+        raise HTTPException(status_code=503, detail="Comparison corpus unavailable.")
+    return {"persona_id": persona_id, "trigger": leak.model_dump(), "comparison": result}
