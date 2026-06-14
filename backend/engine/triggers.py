@@ -286,10 +286,26 @@ _DETECTORS = (
 
 
 def detect_all(persona_id: str, txns: list[dict], now: datetime) -> list[AdoptionMoment]:
-    """Run every detector; return all candidate moments (0..N)."""
+    """Run every transaction-based detector; return all candidate moments (0..N)."""
     moments = []
     for detect in _DETECTORS:
         moment = detect(persona_id, txns, now)
+        if moment is not None:
+            moments.append(moment)
+    return moments
+
+
+def detect_all_moments(
+    persona: dict, txns: list[dict], now: datetime
+) -> list[AdoptionMoment]:
+    """All candidate moments: transaction-based + platform/engagement detectors
+    (feature blind-spot, subscriptions) that read the persona's structured
+    signals. Imported lazily to avoid a circular import at module load."""
+    from engine import feature_blindspot, subscription_detector
+
+    moments = detect_all(persona["persona_id"], txns, now)
+    for meta_detect in (feature_blindspot.detect, subscription_detector.detect):
+        moment = meta_detect(persona)
         if moment is not None:
             moments.append(moment)
     return moments

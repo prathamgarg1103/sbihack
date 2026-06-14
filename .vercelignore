@@ -1,0 +1,9 @@
+backend/.venv
+**/__pycache__
+backend/feedback.db
+node_modules
+**/node_modules
+frontend/dist
+frontend/.vite
+.git
+.claude

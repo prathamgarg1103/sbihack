@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+from functools import lru_cache
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -16,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import config
+from data import generate as datagen
 from engine import agent, comparison, feedback, rag, triggers
 from models import TriggerType
 
@@ -24,6 +26,7 @@ class FeedbackIn(BaseModel):
     persona_id: str
     trigger_type: str
     outcome: str  # adopted | skipped | escalated
+    detail: str | None = None  # e.g. the adopted feature (bill_pay) for the ladder
 
 app = FastAPI(
     title="Saarthi — Agentic Adoption Copilot",
@@ -40,14 +43,14 @@ app.add_middleware(
 )
 
 
+@lru_cache(maxsize=1)
 def _load_dataset() -> dict[str, Any]:
-    if not config.TRANSACTIONS_PATH.exists():
-        raise HTTPException(
-            status_code=503,
-            detail="Synthetic data not generated yet. Run: python data/generate.py",
-        )
-    with config.TRANSACTIONS_PATH.open(encoding="utf-8") as fh:
-        return json.load(fh)
+    """Load the synthetic dataset. Prefer the generated file; if it's absent
+    (e.g. a fresh serverless bundle), build it deterministically in memory."""
+    if config.TRANSACTIONS_PATH.exists():
+        with config.TRANSACTIONS_PATH.open(encoding="utf-8") as fh:
+            return json.load(fh)
+    return datagen.build()
 
 
 def _dataset_now(data: dict[str, Any]) -> datetime:
@@ -105,11 +108,12 @@ def persona_triggers(persona_id: str) -> dict[str, Any]:
     """
     data = _load_dataset()
     txns = _require_persona(data, persona_id)
-    moments = triggers.detect_all(persona_id, txns, _dataset_now(data))
+    meta = _persona_meta(data, persona_id)
+    moments = triggers.detect_all_moments(meta, txns, _dataset_now(data))
     return {
         "persona_id": persona_id,
         "count": len(moments),
-        "moments": [m.model_dump() for m in moments],
+        "moments": [m.model_dump(mode="json") for m in moments],
     }
 
 
@@ -119,8 +123,10 @@ def all_triggers() -> dict[str, Any]:
     data = _load_dataset()
     now = _dataset_now(data)
     out: dict[str, list[dict[str, Any]]] = {}
-    for persona_id, txns in data["transactions"].items():
-        out[persona_id] = [m.model_dump() for m in triggers.detect_all(persona_id, txns, now)]
+    for meta in data["personas"]:
+        pid = meta["persona_id"]
+        moments = triggers.detect_all_moments(meta, data["transactions"][pid], now)
+        out[pid] = [m.model_dump(mode="json") for m in moments]
     return {"generated_at": data["generated_at"], "triggers": out}
 
 
@@ -141,17 +147,22 @@ def persona_nudge(persona_id: str) -> dict[str, Any]:
     txns = _require_persona(data, persona_id)
     meta = _persona_meta(data, persona_id)
     moments = [
-        m.model_dump(mode="json") for m in triggers.detect_all(persona_id, txns, _dataset_now(data))
+        m.model_dump(mode="json")
+        for m in triggers.detect_all_moments(meta, txns, _dataset_now(data))
     ]
-    skipped_types = feedback.skipped_categories(persona_id)
-    return agent.run_agent(meta, moments, skipped_types=skipped_types)
+    return agent.run_agent(
+        meta,
+        moments,
+        skipped_types=feedback.skipped_categories(persona_id),
+        adopted_features=feedback.adopted_features(persona_id),
+    )
 
 
 @app.post("/feedback")
 def post_feedback(fb: FeedbackIn) -> dict[str, Any]:
     """Record an outcome (adopted/skipped/escalated) — closes the learn loop."""
     try:
-        rec = feedback.record(fb.persona_id, fb.trigger_type, fb.outcome)
+        rec = feedback.record(fb.persona_id, fb.trigger_type, fb.outcome, fb.detail)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return {"recorded": rec, "summary": feedback.summary(fb.persona_id)}

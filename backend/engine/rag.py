@@ -1,29 +1,42 @@
 """RAG layer — grounding / anti-hallucination.
 
-Lightweight TF-IDF cosine retrieval over the local corpus (no API key, instant
-install). Each corpus doc carries YAML frontmatter (structured facts used by the
-comparison builder) plus a body (indexed for free-text retrieval). Single source
-of truth, so the numbers the agent states and the numbers a table shows cannot
-drift apart.
+Pure-Python TF-IDF cosine retrieval over the local corpus. No heavy ML deps
+(scikit-learn/numpy), which keeps the serverless bundle small — and for a
+~10-doc corpus the result is identical in spirit to a vectorizer. Each corpus
+doc carries YAML frontmatter (structured facts used by the comparison builder)
+plus a body (indexed for retrieval), so the numbers the agent states and the
+numbers a table shows share one source.
 
-Upgrade path (documented in README): swap TfidfVectorizer for FAISS +
-sentence-transformers; the `query_rag` / `get_doc` surface stays identical.
+Upgrade path (README): swap this index for FAISS + sentence-transformers; the
+`query_rag` / `get_doc` surface stays identical.
 """
 from __future__ import annotations
 
+import math
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import yaml
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 import config
 
 _FRONTMATTER = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
+_TOKEN = re.compile(r"[a-z0-9]+")
+
+# A small English stop-list (we don't pull in sklearn just for this).
+_STOP = {
+    "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "is", "are",
+    "be", "it", "this", "that", "with", "as", "at", "by", "from", "your", "you",
+    "not", "no", "any", "if", "but", "so", "than", "into", "per", "only", "may",
+}
+
+
+def _tokens(text: str) -> list[str]:
+    return [t for t in _TOKEN.findall(text.lower()) if t not in _STOP]
 
 
 @dataclass
@@ -55,16 +68,36 @@ def _parse(path: Path) -> Doc:
 
 
 class RagIndex:
+    """Minimal TF-IDF cosine index."""
+
     def __init__(self, docs: list[Doc]):
         self.docs = docs
-        self._vec = TfidfVectorizer(stop_words="english")
-        self._matrix = self._vec.fit_transform([f"{d.title}\n{d.body}" for d in docs])
+        toks = [_tokens(f"{d.title}\n{d.body}") for d in docs]
+        n = len(docs)
+        df: Counter[str] = Counter()
+        for ts in toks:
+            df.update(set(ts))
+        # smoothed idf
+        self._idf = {t: math.log((1 + n) / (1 + c)) + 1.0 for t, c in df.items()}
+        self._vecs = [self._vectorize(ts) for ts in toks]
+        self._norms = [math.sqrt(sum(w * w for w in v.values())) or 1.0 for v in self._vecs]
+
+    def _vectorize(self, toks: list[str]) -> dict[str, float]:
+        tf = Counter(toks)
+        return {t: c * self._idf.get(t, 0.0) for t, c in tf.items()}
 
     def query(self, q: str, k: int = 3) -> list[tuple[Doc, float]]:
-        qv = self._vec.transform([q])
-        sims = cosine_similarity(qv, self._matrix)[0]
-        order = sims.argsort()[::-1][:k]
-        return [(self.docs[i], float(sims[i])) for i in order if sims[i] > 0]
+        qvec = self._vectorize(_tokens(q))
+        qnorm = math.sqrt(sum(w * w for w in qvec.values())) or 1.0
+        scored: list[tuple[Doc, float]] = []
+        for doc, vec, norm in zip(self.docs, self._vecs, self._norms):
+            small, large = (qvec, vec) if len(qvec) <= len(vec) else (vec, qvec)
+            dot = sum(w * large.get(t, 0.0) for t, w in small.items())
+            sim = dot / (qnorm * norm)
+            if sim > 0:
+                scored.append((doc, sim))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return scored[:k]
 
 
 @lru_cache(maxsize=1)

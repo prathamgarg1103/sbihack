@@ -71,10 +71,14 @@ three demo flows.
 
 ## Demo personas (synthetic)
 
+**Live demo:** https://saarthi-nu.vercel.app
+
 | Flow | Persona | Trigger |
 |------|---------|---------|
+| **D** | Vikram Singh — *Explorer* | narrow YONO usage + a bill paid via another app → **feature-discovery + guided walkthrough (hero)** |
+| **B** | Rahul Verma — *Premium Leaker* | recurring ₹1,240/mo to a competitor insurer → honest comparison |
+| **S** | Priya Nair — *Subscription Saver* | unused subscription renewing soon → review + pause mandate + redirect savings to a goal |
 | **A** | Aarti Sharma — *Idle Saver* | ~₹47k sitting idle 90+ days → sweep-FD nudge |
-| **B** | Rahul Verma — *Premium Leaker* | recurring ₹1,240/mo to a competitor insurer → honest comparison (hero demo) |
 | **C** | Sneha Iyer — *New Earner* | salary jump + MakeMyTrip spend → contextual micro-cover |
 
 ---
@@ -106,10 +110,13 @@ nudge carries "Skip" + "Talk to a human advisor" · consent is revocable.
 - [x] **M7** — frontend flows: nudge card, EN/हिंदी toggle, voice (Web Speech), consent gate,
       honest comparison table. *Pending: coachmark walkthrough overlay.*
 - [x] **M8** — feedback loop: SQLite store; a skipped category is suppressed next time, 4 tests
-- [~] **M9** — polish + demo script (below). *Pending: LLM path needs a key to verify live.*
+- [x] **M9** — polish + demo script (below) + deployed to Vercel
+- [x] **Add-ons** — Flow D (feature discovery + coachmark walkthrough, hero), Subscription
+      Saver (mandate pause + savings redirect), Goal Engine + adoption ladder, 4 tests
 
-**17 tests passing.** Set `ANTHROPIC_API_KEY` in `.env` to upgrade the agent from the
-deterministic fallback to the live `claude-sonnet-4-6` tool-calling loop.
+**21 tests passing** · **deployed** at https://saarthi-nu.vercel.app. Set `ANTHROPIC_API_KEY`
+(`.env` locally, or a Vercel env var) to upgrade the agent from the deterministic fallback to
+the live `claude-sonnet-4-6` tool-calling loop.
 
 ---
 

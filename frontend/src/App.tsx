@@ -10,13 +10,17 @@ import { NudgeCard } from './components/NudgeCard'
 import { ComparisonTable } from './components/ComparisonTable'
 import { ConsentGate } from './components/ConsentGate'
 import { AgentDecisionLog } from './components/AgentDecisionLog'
+import { CoachmarkWalkthrough } from './components/CoachmarkWalkthrough'
+import { SubscriptionDashboard } from './components/SubscriptionDashboard'
 
 type Lang = 'en' | 'hi'
 
-const FLOW_LABEL: Record<Persona['flow'], string> = {
+const FLOW_LABEL: Record<string, string> = {
   A: 'Idle balance → Sweep FD',
   B: 'Premium leak → Honest compare',
   C: 'Salary jump → Micro-cover',
+  D: 'Feature blind-spot → Guided discovery',
+  S: 'Subscriptions → Save & redirect',
 }
 
 const QUICK_ACTIONS = ['Scan & Pay', 'To Mobile', 'To Bank A/C', 'Balance', 'Recharge', 'Bills']
@@ -68,6 +72,8 @@ export default function App() {
   const [consented, setConsented] = useState(false)
   const [skipped, setSkipped] = useState(false)
   const [comparison, setComparison] = useState<Comparison | null>(null)
+  const [walkthroughOpen, setWalkthroughOpen] = useState(false)
+  const [subscriptionOpen, setSubscriptionOpen] = useState(false)
   const [error, setError] = useState<string>('')
 
   useEffect(() => {
@@ -85,6 +91,8 @@ export default function App() {
     setSkipped(false)
     setConsented(false)
     setComparison(null)
+    setWalkthroughOpen(false)
+    setSubscriptionOpen(false)
     setDecision(null)
     const persona = personas.find((p) => p.persona_id === activeId)
     if (persona) setLang(persona.language_pref)
@@ -92,11 +100,17 @@ export default function App() {
       .transactions(activeId)
       .then((r) => setTxns(r.transactions.slice().reverse()))
       .catch((e) => setError(String(e)))
+    refetchNudge()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, personas])
+
+  function refetchNudge() {
+    if (!activeId) return
     api
       .nudge(activeId)
       .then(setDecision)
       .catch((e) => setError(String(e)))
-  }, [activeId, personas])
+  }
 
   const active = personas.find((p) => p.persona_id === activeId)
 
@@ -111,13 +125,33 @@ export default function App() {
   }
 
   function handlePrimary() {
-    record('adopted')
-    if (decision?.surfaced_moment?.suggested_category === 'insurance_compare') {
+    const cat = decision?.surfaced_moment?.suggested_category
+    if (cat === 'insurance_compare') {
+      record('adopted')
       api
         .comparison(activeId)
         .then((r) => setComparison(r.comparison))
         .catch((e) => setError(String(e)))
+    } else if (cat === 'feature_discovery') {
+      setWalkthroughOpen(true) // adoption is recorded when the walkthrough completes
+    } else if (cat === 'subscription_review') {
+      setSubscriptionOpen(true)
+    } else {
+      record('adopted')
     }
+  }
+
+  function adoptFeature() {
+    const feature = decision?.walkthrough?.feature
+    if (activeId) api.feedback(activeId, 'feature_discovery', 'adopted', feature).catch(() => {})
+    setWalkthroughOpen(false)
+    refetchNudge() // ladder advances; agent moves past the adopted feature
+  }
+
+  function redirectSavings() {
+    if (activeId) api.feedback(activeId, 'subscription_saver', 'adopted', decision?.flagged?.sub_id).catch(() => {})
+    setSubscriptionOpen(false)
+    refetchNudge()
   }
 
   const showNudge = decision?.action === 'surface' && decision.surfaced_moment && !skipped
@@ -125,6 +159,24 @@ export default function App() {
   let overlay: React.ReactNode = null
   if (comparison) {
     overlay = <ComparisonTable data={comparison} onBack={() => setComparison(null)} />
+  } else if (walkthroughOpen && decision?.walkthrough) {
+    overlay = (
+      <CoachmarkWalkthrough
+        walkthrough={decision.walkthrough}
+        lang={lang}
+        onAdopt={adoptFeature}
+        onClose={() => setWalkthroughOpen(false)}
+      />
+    )
+  } else if (subscriptionOpen && decision) {
+    overlay = (
+      <SubscriptionDashboard
+        decision={decision}
+        lang={lang}
+        onClose={() => setSubscriptionOpen(false)}
+        onRedirect={redirectSavings}
+      />
+    )
   } else if (showNudge && decision) {
     overlay = consented ? (
       <NudgeCard

@@ -6,6 +6,7 @@ Everything else has a safe local default.
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -27,7 +28,15 @@ MAX_TOKENS: int = int(os.getenv("SAARTHI_MAX_TOKENS", "2048"))
 DATA_DIR = BACKEND_DIR / "data"
 CORPUS_DIR = DATA_DIR / "corpus"
 TRANSACTIONS_PATH = DATA_DIR / "transactions.json"
-FEEDBACK_DB = BACKEND_DIR / "feedback.db"
+
+# Feedback DB must live somewhere writable. On serverless (Vercel) the only
+# writable path is the temp dir; locally we keep it beside the backend.
+if os.getenv("SAARTHI_DB"):
+    FEEDBACK_DB = Path(os.environ["SAARTHI_DB"])
+elif os.getenv("VERCEL"):
+    FEEDBACK_DB = Path(tempfile.gettempdir()) / "saarthi_feedback.db"
+else:
+    FEEDBACK_DB = BACKEND_DIR / "feedback.db"
 
 # --- CORS (Vite dev server) ---
 FRONTEND_ORIGINS = [

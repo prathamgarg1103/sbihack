@@ -12,6 +12,9 @@ class TriggerType(str, Enum):
     PREMIUM_LEAK = "premium_leak"
     SALARY_JUMP = "salary_jump"
     CONTEXTUAL_SPEND = "contextual_spend"
+    # Add-on flows (platform / engagement adoption)
+    FEATURE_DISCOVERY = "feature_discovery"
+    SUBSCRIPTION_SAVER = "subscription_saver"
 
 
 class PayeeCategory(str, Enum):

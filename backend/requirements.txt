@@ -1,13 +1,12 @@
 # --- Web layer ---
 fastapi>=0.115
-uvicorn[standard]>=0.32
+uvicorn[standard]>=0.32   # local dev server (Vercel provides its own ASGI server)
 pydantic>=2.9
 
 # --- Agent core ---
-anthropic>=0.40
+anthropic>=0.40           # only imported when ANTHROPIC_API_KEY is set
 python-dotenv>=1.0
 
-# --- RAG (lightweight; TF-IDF cosine retrieval over the small corpus) ---
-# Upgrade path documented in README: swap for faiss-cpu + sentence-transformers.
-scikit-learn>=1.5
-numpy>=1.26
+# --- RAG / corpus parsing ---
+# Pure-Python TF-IDF (engine/rag.py) — no scikit-learn/numpy needed.
+PyYAML>=6.0

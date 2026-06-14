@@ -167,9 +167,82 @@ def persona_new_earner(rng: random.Random) -> dict:
     }
 
 
+def persona_explorer(rng: random.Random) -> dict:
+    """Flow D (hero): narrow YONO usage + a bill paid through another app."""
+    pid = "p4_explorer"
+    led = Ledger(pid, opening_balance=9000.0)
+    for m in range(4, 0, -1):
+        led.add(m * 30 + 2, 30000.0, "RELIANCE RETAIL SALARY", "salary", "NACH")
+        # Electricity bill paid via a NON-YONO app every month (the blind spot).
+        led.add(m * 30 + 6, -1180.0, "BESCOM ELECTRICITY", "bill", "UPI")
+        led.add(m * 30 + 1, -27000.0, "SELF UPI WITHDRAWAL", "transfer", "UPI")
+    _spends(led, rng, start_days=110, end_days=2, n=26, lo=80, hi=700)
+    return {
+        "persona_id": pid,
+        "name": "Vikram Singh",
+        "headline": "Explorer",
+        "flow": "D",
+        "blurb": "Uses YONO only for UPI + balance; pays bills in another app.",
+        "language_pref": "hi",
+        "monthly_income": 30000,
+        # Platform-adoption signals (read by the feature-blindspot trigger).
+        "yono_actions_30d": ["upi", "balance_check", "upi", "upi", "balance_check", "upi"],
+        "features_ever_used": ["upi", "balance_check"],
+        "external_recurring": [
+            {"payee": "BESCOM ELECTRICITY", "via": "PhonePe", "amount": 1180,
+             "cadence": "monthly", "feature": "bill_pay"},
+        ],
+        "ledger": led,
+    }
+
+
+def persona_subscription_saver(rng: random.Random) -> dict:
+    """Recurring OTT/fitness/storage debits, some unused; saving toward a goal."""
+    pid = "p5_subscription_saver"
+    led = Ledger(pid, opening_balance=20000.0)
+    for m in range(4, 0, -1):
+        led.add(m * 30 + 5, 55000.0, "WIPRO LTD SALARY", "salary", "NACH")
+        led.add(m * 30 + 4, -649.0, "NETFLIX", "merchant", "UPI")
+        led.add(m * 30 + 4, -1300.0, "CULT FIT", "merchant", "UPI")
+        led.add(m * 30 + 3, -130.0, "GOOGLE ONE", "merchant", "card")
+        led.add(m * 30 + 1, -30000.0, "RENT PRESTIGE APTS", "transfer", "IMPS")
+    _spends(led, rng, start_days=120, end_days=2, n=38, lo=120, hi=2200)
+    return {
+        "persona_id": pid,
+        "name": "Priya Nair",
+        "headline": "Subscription Saver",
+        "flow": "S",
+        "blurb": "Several monthly subscriptions — some unused; saving toward a goal.",
+        "language_pref": "en",
+        "monthly_income": 55000,
+        "subscriptions": [
+            {"sub_id": "s1", "name": "NETFLIX", "category": "OTT", "amount": 649,
+             "cadence": "monthly", "via": "UPI_AUTOPAY", "used_last_30d": True,
+             "next_charge_in_days": 12},
+            {"sub_id": "s2", "name": "CULT FIT", "category": "FITNESS", "amount": 1300,
+             "cadence": "monthly", "via": "UPI_AUTOPAY", "used_last_30d": False,
+             "next_charge_in_days": 3},
+            {"sub_id": "s3", "name": "GOOGLE ONE", "category": "STORAGE", "amount": 130,
+             "cadence": "monthly", "via": "card", "used_last_30d": False,
+             "next_charge_in_days": 14},
+        ],
+        "goals": [
+            {"goal_id": "g1", "label": "Buy a bike", "target_amount": 120000,
+             "target_date": "2027-06-01", "saved_so_far": 38000},
+        ],
+        "ledger": led,
+    }
+
+
 def build() -> dict:
     rng = random.Random(SEED)
-    builders = [persona_idle_saver, persona_premium_leaker, persona_new_earner]
+    builders = [
+        persona_idle_saver,
+        persona_premium_leaker,
+        persona_new_earner,
+        persona_explorer,
+        persona_subscription_saver,
+    ]
     personas_meta: list[dict] = []
     transactions: dict[str, list[dict]] = {}
 

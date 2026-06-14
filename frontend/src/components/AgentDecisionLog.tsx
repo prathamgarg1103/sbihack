@@ -76,6 +76,36 @@ export function AgentDecisionLog({ decision }: { decision: AgentDecision }) {
             </p>
           )}
         </div>
+
+        {/* Adoption ladder (platform depth) */}
+        {decision.ladder && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
+              Adoption ladder
+            </p>
+            <div className="mt-1.5 flex items-center gap-1">
+              {decision.ladder.ladder.map((rung, idx) => (
+                <div key={rung.feature} className="flex items-center gap-1">
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${
+                      rung.adopted
+                        ? 'bg-yono-mint/20 text-yono-mint'
+                        : rung.feature === decision.ladder!.next
+                          ? 'bg-yono-blue/10 text-yono-blue ring-1 ring-yono-blue'
+                          : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                    {rung.adopted ? '✓ ' : ''}
+                    {rung.display}
+                  </span>
+                  {idx < decision.ladder!.ladder.length - 1 && (
+                    <span className="text-[9px] text-slate-300">→</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <p className="mt-2 text-[10px] leading-relaxed text-slate-400">

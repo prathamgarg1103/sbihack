@@ -7,7 +7,7 @@ export interface Persona {
   persona_id: string
   name: string
   headline: string
-  flow: 'A' | 'B' | 'C'
+  flow: string
   blurb: string
   language_pref: 'en' | 'hi'
   monthly_income: number
@@ -31,8 +31,8 @@ export interface Moment {
   title: string
   summary: string
   severity: 'low' | 'medium' | 'high'
-  suggested_category: 'fixed_deposit' | 'insurance_compare' | 'micro_cover'
-  evidence: Record<string, string | number>
+  suggested_category: string
+  evidence: Record<string, unknown>
   evidence_txn_ids: string[]
 }
 
@@ -72,12 +72,68 @@ export interface Suppressed {
   reason: string
 }
 
+export interface Walkthrough {
+  feature: string
+  display: string
+  steps: string[]
+  time_seconds: number
+}
+
+export interface LadderRung {
+  feature: string
+  display: string
+  adopted: boolean
+}
+
+export interface Ladder {
+  ladder: LadderRung[]
+  adopted: string[]
+  next: string | null
+  next_display: string | null
+}
+
+export interface Subscription {
+  sub_id: string
+  name: string
+  category: string
+  amount: number
+  cadence: string
+  via: string
+  used_last_30d: boolean
+  next_charge_in_days: number
+  is_mandate?: boolean
+}
+
+export interface GoalRedirect {
+  goal_id: string
+  label: string
+  amount: number
+  saved_before: number
+  saved_after: number
+  target: number
+  pct_before: number
+  pct_after: number
+  text: NudgeCopy
+}
+
 export interface AgentDecision {
   action: 'surface' | 'suppress' | 'stay_silent'
+  flow?: 'product' | 'feature_discovery' | 'subscription'
   surfaced_moment?: Moment | null
   product?: { type: string; doc_id: string; monthly_cost: number }
   suitability?: { suitable: boolean; blocks: string[]; reasons: string[] }
   comparison_available?: boolean
+  // feature_discovery
+  walkthrough?: Walkthrough
+  ladder?: Ladder
+  unlocks?: string | null
+  // subscription
+  subscriptions?: Subscription[]
+  flagged?: Subscription
+  is_mandate?: boolean
+  total_monthly?: number
+  potential_savings?: number
+  goal_redirect?: GoalRedirect | null
   nudge?: { title: NudgeCopy; body: NudgeCopy; cta: NudgeCopy }
   suppressed?: Suppressed[]
   decision_log: DecisionStep[]
@@ -117,11 +173,17 @@ export const api = {
       `/personas/${id}/comparison`,
     ),
   nudge: (id: string) => get<AgentDecision>(`/personas/${id}/nudge`),
-  feedback: (persona_id: string, trigger_type: string, outcome: 'adopted' | 'skipped' | 'escalated') =>
+  feedback: (
+    persona_id: string,
+    trigger_type: string,
+    outcome: 'adopted' | 'skipped' | 'escalated',
+    detail?: string,
+  ) =>
     post<{ recorded: unknown; summary: Record<string, number> }>('/feedback', {
       persona_id,
       trigger_type,
       outcome,
+      detail,
     }),
   resetFeedback: (id: string) =>
     fetch(`/api/feedback/${id}`, { method: 'DELETE' }).then((r) => r.json()),
