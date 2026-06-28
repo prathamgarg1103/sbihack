@@ -160,7 +160,7 @@ def persona_new_earner(rng: random.Random) -> dict:
         "name": "Sneha Iyer",
         "headline": "New Earner",
         "flow": "C",
-        "blurb": "Recent salary jump and a travel booking — a contextual cover moment.",
+        "blurb": "Recent salary jump — a moment to invest the raise across the whole market, honestly.",
         "language_pref": "en",
         "monthly_income": 55000,
         "ledger": led,
@@ -212,19 +212,19 @@ def persona_subscription_saver(rng: random.Random) -> dict:
         "name": "Priya Nair",
         "headline": "Subscription Saver",
         "flow": "S",
-        "blurb": "Several monthly subscriptions — some unused; saving toward a goal.",
+        "blurb": "Several monthly subscriptions with upcoming renewals; saving toward a goal.",
         "language_pref": "en",
         "monthly_income": 55000,
+        # Note: we deliberately do NOT carry an in-app "usage" signal here — the
+        # bank can see the mandate and its next charge date, but not whether you
+        # opened the third-party app. Nudges reminder off renewal, not usage.
         "subscriptions": [
             {"sub_id": "s1", "name": "NETFLIX", "category": "OTT", "amount": 649,
-             "cadence": "monthly", "via": "UPI_AUTOPAY", "used_last_30d": True,
-             "next_charge_in_days": 12},
+             "cadence": "monthly", "via": "UPI_AUTOPAY", "next_charge_in_days": 12},
             {"sub_id": "s2", "name": "CULT FIT", "category": "FITNESS", "amount": 1300,
-             "cadence": "monthly", "via": "UPI_AUTOPAY", "used_last_30d": False,
-             "next_charge_in_days": 3},
+             "cadence": "monthly", "via": "UPI_AUTOPAY", "next_charge_in_days": 3},
             {"sub_id": "s3", "name": "GOOGLE ONE", "category": "STORAGE", "amount": 130,
-             "cadence": "monthly", "via": "card", "used_last_30d": False,
-             "next_charge_in_days": 14},
+             "cadence": "monthly", "via": "card", "next_charge_in_days": 14},
         ],
         "goals": [
             {"goal_id": "g1", "label": "Buy a bike", "target_amount": 120000,

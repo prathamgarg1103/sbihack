@@ -99,7 +99,6 @@ export interface Subscription {
   amount: number
   cadence: string
   via: string
-  used_last_30d: boolean
   next_charge_in_days: number
   is_mandate?: boolean
 }
@@ -116,13 +115,77 @@ export interface GoalRedirect {
   text: NudgeCopy
 }
 
+export interface InvestScenario {
+  years: number
+  invested: number
+  rd_value: number
+  sip_value: number
+  sip_gain: number
+}
+
+export interface Invest {
+  monthly: number
+  rd_pct: number
+  sip_pct: number
+  scenarios: InvestScenario[]
+  disclaimer: string
+}
+
+export interface LearnState {
+  adopted: string[]
+  skipped: string[]
+  note: string
+}
+
+export interface Fund {
+  name: string
+  amc: string
+  is_sbi: boolean
+  category: string
+  expense_ratio: number
+  return_5y: number
+}
+
+export interface Stock {
+  symbol: string
+  name: string
+  sector: string
+  is_sbi: boolean
+}
+
+export interface InvestmentShelf {
+  funds: Fund[]
+  stocks: Stock[]
+  fund_count: number
+  stock_count: number
+  sbi_fund_count: number
+  other_fund_count: number
+  neutrality_note: string
+  honest_highlight: string
+  illustrative: boolean
+  disclaimer: string
+  sources: string[]
+}
+
+export interface SweepRow {
+  persona_id: string
+  headline: string
+  flow_label: string
+  action: 'surface' | 'suppress' | 'stay_silent'
+  surfaced_trigger: string | null
+  rationale: string
+  engine: string
+}
+
 export interface AgentDecision {
   action: 'surface' | 'suppress' | 'stay_silent'
-  flow?: 'product' | 'feature_discovery' | 'subscription'
+  flow?: 'product' | 'feature_discovery' | 'subscription' | 'invest_shelf'
   surfaced_moment?: Moment | null
+  investment_shelf?: InvestmentShelf | null
   product?: { type: string; doc_id: string; monthly_cost: number }
   suitability?: { suitable: boolean; blocks: string[]; reasons: string[] }
   comparison_available?: boolean
+  neutral_disclosure?: boolean
   // feature_discovery
   walkthrough?: Walkthrough
   ladder?: Ladder
@@ -134,11 +197,14 @@ export interface AgentDecision {
   total_monthly?: number
   potential_savings?: number
   goal_redirect?: GoalRedirect | null
+  invest?: Invest | null
   nudge?: { title: NudgeCopy; body: NudgeCopy; cta: NudgeCopy }
   suppressed?: Suppressed[]
   decision_log: DecisionStep[]
+  learn_state?: LearnState
   engine: string
   model?: string
+  llm_error?: string
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -173,6 +239,7 @@ export const api = {
       `/personas/${id}/comparison`,
     ),
   nudge: (id: string) => get<AgentDecision>(`/personas/${id}/nudge`),
+  sweep: () => get<{ generated_at: string; engine: string; rows: SweepRow[] }>('/agent/sweep'),
   feedback: (
     persona_id: string,
     trigger_type: string,

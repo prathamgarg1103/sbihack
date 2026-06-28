@@ -22,7 +22,7 @@ ANTHROPIC_API_KEY: str | None = os.getenv("ANTHROPIC_API_KEY")
 # --- Agent ---
 # Per CLAUDE.md the agent reasoning core runs on claude-sonnet-4-6.
 MODEL: str = os.getenv("SAARTHI_MODEL", "claude-sonnet-4-6")
-MAX_TOKENS: int = int(os.getenv("SAARTHI_MAX_TOKENS", "2048"))
+MAX_TOKENS: int = int(os.getenv("SAARTHI_MAX_TOKENS", "4096"))
 
 # --- Paths ---
 DATA_DIR = BACKEND_DIR / "data"

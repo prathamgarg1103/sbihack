@@ -158,6 +158,63 @@ def persona_nudge(persona_id: str) -> dict[str, Any]:
     )
 
 
+# Human-readable flow labels for the Mission Control feed.
+_FLOW_LABEL = {
+    "A": "Idle balance → Sweep FD",
+    "B": "Premium leak → Honest compare",
+    "C": "Salary jump → Open-shelf investing",
+    "D": "Feature blind-spot → Guided discovery",
+    "S": "Subscriptions → Save & redirect",
+}
+
+
+def _sweep_rationale(decision: dict[str, Any]) -> str:
+    """A one-line, feed-friendly summary of what the agent decided."""
+    if decision.get("action") == "surface":
+        title = ((decision.get("nudge") or {}).get("title") or {}).get("en")
+        if title:
+            return title
+    acts = [s for s in decision.get("decision_log", []) if s.get("step") == "act"]
+    if acts:
+        return acts[-1]["detail"]
+    return "Nothing worth interrupting the user for."
+
+
+@app.get("/agent/sweep")
+def agent_sweep() -> dict[str, Any]:
+    """Run the agent autonomously across EVERY persona at once — the 'Mission
+    Control' view of the perceive→reason→act loop operating at fleet scale (one
+    journey, many users). Demonstrates the framework is reusable + scalable."""
+    data = _load_dataset()
+    now = _dataset_now(data)
+    rows: list[dict[str, Any]] = []
+    engine = "deterministic"
+    for meta in data["personas"]:
+        pid = meta["persona_id"]
+        moments = [
+            m.model_dump(mode="json")
+            for m in triggers.detect_all_moments(meta, data["transactions"][pid], now)
+        ]
+        decision = agent.run_agent(
+            meta,
+            moments,
+            skipped_types=feedback.skipped_categories(pid),
+            adopted_features=feedback.adopted_features(pid),
+        )
+        engine = decision.get("engine", engine)
+        surfaced = (decision.get("surfaced_moment") or {}).get("trigger_type")
+        rows.append({
+            "persona_id": pid,
+            "headline": meta.get("headline"),
+            "flow_label": _FLOW_LABEL.get(meta.get("flow"), meta.get("flow")),
+            "action": decision.get("action"),
+            "surfaced_trigger": surfaced,
+            "rationale": _sweep_rationale(decision),
+            "engine": decision.get("engine", "deterministic"),
+        })
+    return {"generated_at": data["generated_at"], "engine": engine, "rows": rows}
+
+
 @app.post("/feedback")
 def post_feedback(fb: FeedbackIn) -> dict[str, Any]:
     """Record an outcome (adopted/skipped/escalated) — closes the learn loop."""

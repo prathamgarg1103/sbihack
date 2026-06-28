@@ -2,6 +2,7 @@ import type { AgentDecision, DecisionStep } from '../lib/api'
 
 const STEP_STYLE: Record<string, { dot: string; label: string }> = {
   perceive: { dot: 'bg-slate-400', label: 'PERCEIVE' },
+  learn: { dot: 'bg-violet-500', label: 'LEARN' },
   reason: { dot: 'bg-yono-blue', label: 'REASON' },
   suppress: { dot: 'bg-yono-amber', label: 'SUPPRESS' },
   act: { dot: 'bg-yono-mint', label: 'ACT' },
@@ -34,8 +35,16 @@ function Step({ s }: { s: DecisionStep }) {
   )
 }
 
-export function AgentDecisionLog({ decision }: { decision: AgentDecision }) {
+export function AgentDecisionLog({
+  decision,
+  onReset,
+}: {
+  decision: AgentDecision
+  onReset?: () => void
+}) {
   const live = decision.engine === 'anthropic'
+  const learn = decision.learn_state
+  const hasMemory = !!learn && (learn.adopted.length > 0 || learn.skipped.length > 0)
   return (
     <aside className="w-[320px] shrink-0">
       <div className="mb-2 flex items-center justify-between">
@@ -104,6 +113,40 @@ export function AgentDecisionLog({ decision }: { decision: AgentDecision }) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* What Saarthi has learned about this user (the 'learn' close of the loop) */}
+        {learn && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] font-bold uppercase tracking-wide text-violet-500">
+                What Saarthi has learned
+              </p>
+              {onReset && hasMemory && (
+                <button
+                  onClick={onReset}
+                  className="rounded-md px-1.5 py-0.5 text-[9px] font-semibold text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                >
+                  reset
+                </button>
+              )}
+            </div>
+            <p className="mt-1 text-[11px] leading-snug text-slate-600">{learn.note}</p>
+            {hasMemory && (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {learn.adopted.map((a) => (
+                  <span key={a} className="rounded-full bg-yono-mint/15 px-2 py-0.5 text-[9px] font-semibold text-yono-mint">
+                    ✓ {a}
+                  </span>
+                ))}
+                {learn.skipped.map((s) => (
+                  <span key={s} className="rounded-full bg-yono-amber/15 px-2 py-0.5 text-[9px] font-semibold text-yono-amber">
+                    ⤳ backed off {s}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Comparison, ComparisonRow } from '../lib/api'
 
 function cellClass(win: boolean): string {
@@ -29,7 +30,16 @@ function Row({ r }: { r: ComparisonRow }) {
   )
 }
 
-export function ComparisonTable({ data, onBack }: { data: Comparison; onBack: () => void }) {
+export function ComparisonTable({
+  data,
+  onBack,
+  onEscalate,
+}: {
+  data: Comparison
+  onBack: () => void
+  onEscalate?: () => void
+}) {
+  const [escalated, setEscalated] = useState(false)
   return (
     <div className="absolute inset-0 z-40 flex flex-col bg-white">
       {/* Header */}
@@ -107,15 +117,38 @@ export function ComparisonTable({ data, onBack }: { data: Comparison; onBack: ()
 
       {/* Actions */}
       <div className="border-t border-slate-100 p-3">
-        <button className="w-full rounded-xl border border-yono-blue py-2.5 text-sm font-semibold text-yono-blue hover:bg-yono-blue/5">
-          Talk to a human advisor first
-        </button>
-        <button
-          onClick={onBack}
-          className="mt-2 w-full rounded-xl py-2 text-[12px] font-medium text-slate-400 hover:text-slate-600"
-        >
-          Not now
-        </button>
+        {escalated ? (
+          <div className="rounded-xl border border-yono-mint/30 bg-yono-mint/10 px-3 py-2.5 text-center">
+            <p className="text-[12px] font-semibold text-yono-ink">
+              An SBI advisor will reach out to walk you through both policies.
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-500">Guidance, not a sale — no pressure to switch.</p>
+            <button
+              onClick={onBack}
+              className="mt-2 text-[12px] font-medium text-yono-blue hover:underline"
+            >
+              Back to YONO
+            </button>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={() => {
+                onEscalate?.()
+                setEscalated(true)
+              }}
+              className="w-full rounded-xl border border-yono-blue py-2.5 text-sm font-semibold text-yono-blue hover:bg-yono-blue/5"
+            >
+              Talk to a human advisor first
+            </button>
+            <button
+              onClick={onBack}
+              className="mt-2 w-full rounded-xl py-2 text-[12px] font-medium text-slate-400 hover:text-slate-600"
+            >
+              Not now
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

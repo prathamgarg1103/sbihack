@@ -217,10 +217,11 @@ def detect_salary_jump(persona_id: str, txns: list[dict], now: datetime) -> Adop
         title="Income just went up",
         summary=(
             f"Your salary rose from ₹{int(prev_amt):,} to ₹{int(latest_amt):,} "
-            f"(+{round(rise * 100)}%). A good moment to add simple protection."
+            f"(+{round(rise * 100)}%). A good moment to start investing — across the "
+            "whole market, honestly."
         ),
-        severity="low",
-        suggested_category="micro_cover",
+        severity="medium",
+        suggested_category="invest_shelf",
         evidence={
             "previous_salary": int(prev_amt),
             "latest_salary": int(latest_amt),

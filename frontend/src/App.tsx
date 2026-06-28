@@ -12,13 +12,16 @@ import { ConsentGate } from './components/ConsentGate'
 import { AgentDecisionLog } from './components/AgentDecisionLog'
 import { CoachmarkWalkthrough } from './components/CoachmarkWalkthrough'
 import { SubscriptionDashboard } from './components/SubscriptionDashboard'
+import { InvestmentShelf } from './components/InvestmentShelf'
+import { MissionControl } from './components/MissionControl'
 
 type Lang = 'en' | 'hi'
+type View = 'demo' | 'mission'
 
 const FLOW_LABEL: Record<string, string> = {
   A: 'Idle balance → Sweep FD',
   B: 'Premium leak → Honest compare',
-  C: 'Salary jump → Micro-cover',
+  C: 'Salary jump → Open-shelf investing',
   D: 'Feature blind-spot → Guided discovery',
   S: 'Subscriptions → Save & redirect',
 }
@@ -74,6 +77,8 @@ export default function App() {
   const [comparison, setComparison] = useState<Comparison | null>(null)
   const [walkthroughOpen, setWalkthroughOpen] = useState(false)
   const [subscriptionOpen, setSubscriptionOpen] = useState(false)
+  const [investmentOpen, setInvestmentOpen] = useState(false)
+  const [view, setView] = useState<View>('demo')
   const [error, setError] = useState<string>('')
 
   useEffect(() => {
@@ -93,6 +98,7 @@ export default function App() {
     setComparison(null)
     setWalkthroughOpen(false)
     setSubscriptionOpen(false)
+    setInvestmentOpen(false)
     setDecision(null)
     const persona = personas.find((p) => p.persona_id === activeId)
     if (persona) setLang(persona.language_pref)
@@ -124,6 +130,10 @@ export default function App() {
     setSkipped(true)
   }
 
+  function escalate() {
+    record('escalated') // routes to a human advisor — the trust-first off-ramp
+  }
+
   function handlePrimary() {
     const cat = decision?.surfaced_moment?.suggested_category
     if (cat === 'insurance_compare') {
@@ -136,9 +146,17 @@ export default function App() {
       setWalkthroughOpen(true) // adoption is recorded when the walkthrough completes
     } else if (cat === 'subscription_review') {
       setSubscriptionOpen(true)
+    } else if (cat === 'invest_shelf') {
+      setInvestmentOpen(true) // adoption recorded when they start a SIP
     } else {
       record('adopted')
     }
+  }
+
+  function startInvesting() {
+    record('adopted')
+    setInvestmentOpen(false)
+    refetchNudge()
   }
 
   function adoptFeature() {
@@ -154,11 +172,24 @@ export default function App() {
     refetchNudge()
   }
 
+  function resetLearning() {
+    if (!activeId) return
+    api
+      .resetFeedback(activeId)
+      .then(() => {
+        setSkipped(false)
+        refetchNudge() // agent re-decides with a clean slate — handy to re-run the demo
+      })
+      .catch(() => {})
+  }
+
   const showNudge = decision?.action === 'surface' && decision.surfaced_moment && !skipped
 
   let overlay: React.ReactNode = null
   if (comparison) {
-    overlay = <ComparisonTable data={comparison} onBack={() => setComparison(null)} />
+    overlay = (
+      <ComparisonTable data={comparison} onBack={() => setComparison(null)} onEscalate={escalate} />
+    )
   } else if (walkthroughOpen && decision?.walkthrough) {
     overlay = (
       <CoachmarkWalkthrough
@@ -177,6 +208,16 @@ export default function App() {
         onRedirect={redirectSavings}
       />
     )
+  } else if (investmentOpen && decision?.investment_shelf) {
+    overlay = (
+      <InvestmentShelf
+        decision={decision}
+        lang={lang}
+        onClose={() => setInvestmentOpen(false)}
+        onInvest={startInvesting}
+        onEscalate={escalate}
+      />
+    )
   } else if (showNudge && decision) {
     overlay = consented ? (
       <NudgeCard
@@ -185,6 +226,7 @@ export default function App() {
         onLang={setLang}
         onSkip={handleSkip}
         onPrimary={handlePrimary}
+        onEscalate={escalate}
       />
     ) : (
       <ConsentGate
@@ -206,6 +248,19 @@ export default function App() {
         <p className="mt-1 text-sm text-slate-500">
           Trust-first nudges inside a mocked YONO super-app · synthetic data only
         </p>
+        <div className="mt-3 inline-flex overflow-hidden rounded-full border border-slate-200 text-xs font-semibold">
+          {(['demo', 'mission'] as View[]).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-4 py-1.5 transition ${
+                view === v ? 'bg-yono-ink text-white' : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              {v === 'demo' ? 'Demo' : 'Mission Control'}
+            </button>
+          ))}
+        </div>
       </header>
 
       {error && (
@@ -216,6 +271,9 @@ export default function App() {
         </div>
       )}
 
+      {view === 'mission' ? (
+        <MissionControl />
+      ) : (
       <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-start">
         {/* Persona switcher */}
         <aside className="w-[280px] shrink-0">
@@ -300,8 +358,9 @@ export default function App() {
         </PhoneFrame>
 
         {/* Agent decision loop */}
-        {decision && <AgentDecisionLog decision={decision} />}
+        {decision && <AgentDecisionLog decision={decision} onReset={resetLearning} />}
       </div>
+      )}
 
       <footer className="text-xs text-slate-400">
         Perceive → reason → act loop · grounded in a cited corpus · ULIPs auto-blocked · synthetic data

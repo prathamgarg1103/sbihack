@@ -45,14 +45,17 @@ export function NudgeCard({
   onLang,
   onSkip,
   onPrimary,
+  onEscalate,
 }: {
   decision: AgentDecision
   lang: Lang
   onLang: (l: Lang) => void
   onSkip: () => void
   onPrimary: () => void
+  onEscalate?: () => void
 }) {
   const [why, setWhy] = useState(false)
+  const [escalated, setEscalated] = useState(false)
   const moment = decision.surfaced_moment
   const nudge = decision.nudge
   if (!moment || !nudge) return null
@@ -111,6 +114,19 @@ export function NudgeCard({
           ))}
         </div>
 
+        {/* Open-shelf neutrality line — shown for SBI-product surfaces so the
+            recommendation reads as fit-driven, not self-dealing. */}
+        {decision.neutral_disclosure && (
+          <div className="mt-2.5 flex items-start gap-1.5 rounded-xl border border-yono-blue/20 bg-yono-blue/5 px-2.5 py-1.5">
+            <span className="text-[12px] leading-none">⚖️</span>
+            <p className="text-[11px] leading-snug text-slate-600">
+              {lang === 'hi'
+                ? 'यह आपकी गतिविधि से मेल खाता है इसलिए दिख रहा है — इसलिए नहीं कि यह SBI का है। YONO पूरा बाज़ार दिखाता है।'
+                : "You're seeing this because it fits your activity — not because it's an SBI product. YONO lists the whole market."}
+            </p>
+          </div>
+        )}
+
         {/* Explainability reveal */}
         <button
           onClick={() => setWhy((v) => !v)}
@@ -140,20 +156,39 @@ export function NudgeCard({
         )}
 
         {/* Actions */}
-        <button
-          onClick={onPrimary}
-          className="mt-3 w-full rounded-xl bg-yono-blue py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-yono-blue/90"
-        >
-          {nudge.cta[lang]}
-        </button>
-        <div className="mt-2 flex gap-2">
-          <button className="flex-1 rounded-xl border border-slate-200 py-2 text-[12px] font-medium text-slate-600 hover:border-slate-300">
-            {lang === 'hi' ? 'सलाहकार से बात करें' : 'Talk to a human advisor'}
-          </button>
-          <button onClick={onSkip} className="rounded-xl px-4 py-2 text-[12px] font-medium text-slate-400 hover:text-slate-600">
-            {lang === 'hi' ? 'छोड़ें' : 'Skip'}
-          </button>
-        </div>
+        {escalated ? (
+          <div className="mt-3 rounded-xl border border-yono-mint/30 bg-yono-mint/10 px-3 py-2.5 text-center">
+            <p className="text-[12px] font-semibold text-yono-ink">
+              {lang === 'hi' ? 'एक SBI सलाहकार आपसे संपर्क करेंगे।' : 'An SBI advisor will reach out.'}
+            </p>
+            <p className="mt-0.5 text-[11px] text-slate-500">
+              {lang === 'hi' ? 'मार्गदर्शन, बिक्री नहीं — कोई दबाव नहीं।' : 'Guidance, not a sale — no pressure.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={onPrimary}
+              className="mt-3 w-full rounded-xl bg-yono-blue py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-yono-blue/90"
+            >
+              {nudge.cta[lang]}
+            </button>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={() => {
+                  onEscalate?.()
+                  setEscalated(true)
+                }}
+                className="flex-1 rounded-xl border border-slate-200 py-2 text-[12px] font-medium text-slate-600 hover:border-slate-300"
+              >
+                {lang === 'hi' ? 'सलाहकार से बात करें' : 'Talk to a human advisor'}
+              </button>
+              <button onClick={onSkip} className="rounded-xl px-4 py-2 text-[12px] font-medium text-slate-400 hover:text-slate-600">
+                {lang === 'hi' ? 'छोड़ें' : 'Skip'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

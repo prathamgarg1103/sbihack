@@ -25,6 +25,47 @@ def _feature_doc(feature: str) -> rag.Doc | None:
     )
 
 
+def moment_for_feature(persona: dict[str, Any], feature: str) -> dict[str, Any] | None:
+    """Build a feature-discovery moment for ANY ladder rung from its corpus doc.
+
+    Used by the learn loop: once a user adopts the current rung, the agent
+    advances the ladder and surfaces the next never-used feature (compounding
+    platform adoption). Returns a JSON-ready moment dict, or None if the feature
+    has no corpus one-pager (e.g. the terminal `fixed_deposit` product rung)."""
+    doc = _feature_doc(feature)
+    if doc is None:
+        return None
+    meta = doc.meta
+    display = meta.get("display_name", feature.replace("_", " ").title())
+    secs = meta.get("time_seconds", 30)
+    external = persona.get("external_recurring") or []
+    item = next((x for x in external if x.get("feature") == feature), {})
+    moment = AdoptionMoment(
+        trigger_type=TriggerType.FEATURE_DISCOVERY,
+        persona_id=persona["persona_id"],
+        title=f"A YONO feature you've never used: {display}",
+        summary=(
+            f"YONO can do this in about {secs} seconds, right inside the app. "
+            "Want me to show you?"
+        ),
+        severity="medium",
+        suggested_category="feature_discovery",
+        evidence={
+            "feature": feature,
+            "display_name": display,
+            "external_payee": item.get("payee"),
+            "via": item.get("via"),
+            "amount": item.get("amount"),
+            "time_seconds": secs,
+            "steps": meta.get("steps", []),
+            "unlocks": meta.get("unlocks"),
+            "doc_id": doc.id,
+        },
+        evidence_txn_ids=[],
+    )
+    return moment.model_dump(mode="json")
+
+
 def detect(persona: dict[str, Any]) -> AdoptionMoment | None:
     actions = set(persona.get("yono_actions_30d") or [])
     used = set(persona.get("features_ever_used") or [])
