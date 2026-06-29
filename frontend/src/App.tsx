@@ -242,7 +242,7 @@ export default function App() {
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col items-center gap-8 px-6 py-10">
       <header className="text-center">
         <h1 className="text-3xl font-bold tracking-tight text-yono-ink">
-          Saarthi <span className="text-yono-blue">·</span>{' '}
+          Diya <span className="text-yono-blue">·</span>{' '}
           <span className="font-medium text-slate-500">Agentic Adoption Copilot</span>
         </h1>
         <p className="mt-1 text-sm text-slate-500">

@@ -69,7 +69,7 @@ export function NudgeCard({
             <div className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-yono-blue to-yono-mint text-xs font-bold text-white">
               ✦
             </div>
-            <span className="text-sm font-semibold text-yono-ink">Saarthi</span>
+            <span className="text-sm font-semibold text-yono-ink">Diya</span>
             <span className="rounded-full bg-yono-mint/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-yono-mint">
               guidance · not a sale
             </span>

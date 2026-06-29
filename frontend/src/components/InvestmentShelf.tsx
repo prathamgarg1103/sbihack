@@ -111,7 +111,7 @@ export function InvestmentShelf({
           <p className="text-[11px] leading-snug text-slate-600">⚖️ {shelf.neutrality_note}</p>
         </div>
 
-        {/* The honesty proof — Saarthi points to a non-SBI winner */}
+        {/* The honesty proof — Diya points to a non-SBI winner */}
         {shelf.honest_highlight && (
           <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
             <p className="text-[10px] font-bold uppercase text-amber-800">
@@ -159,8 +159,8 @@ export function InvestmentShelf({
         <div className="mt-3 rounded-xl bg-yono-mint/10 px-3 py-2">
           <p className="text-[11px] text-slate-700">
             ✓ {lang === 'hi'
-              ? 'इंडेक्स फंड और SIP साधारण, गैर-ULIP हैं — Saarthi के फ़िल्टर से पास।'
-              : 'Index funds & SIPs are simple, non-ULIP — they pass Saarthi’s filter.'}
+              ? 'इंडेक्स फंड और SIP साधारण, गैर-ULIP हैं — Diya के फ़िल्टर से पास।'
+              : 'Index funds & SIPs are simple, non-ULIP — they pass Diya’s filter.'}
           </p>
         </div>
         <div className="mt-3">

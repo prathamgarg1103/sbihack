@@ -39,7 +39,7 @@ def check_suitability(
     if norm in BLOCKED_PRODUCT_TYPES:
         blocks.append(
             f"'{product_type}' is an insurance-cum-investment product — auto-blocked "
-            "(Saarthi recommends simple term/deposit products only)."
+            "(Diya recommends simple term/deposit products only)."
         )
 
     # Rule — affordability.

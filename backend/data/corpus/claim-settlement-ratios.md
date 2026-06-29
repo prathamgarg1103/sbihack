@@ -13,5 +13,5 @@ a financial year. Higher is better, but most large insurers now cluster within a
 narrow band, so a small difference is rarely decisive on its own.
 
 FY24 individual death-claim CSR (illustrative): SBI Life 99.2%, HDFC Life 99.5%,
-LIC 98.7%, industry average ~98.0%. When comparing, Saarthi should show this
+LIC 98.7%, industry average ~98.0%. When comparing, Diya should show this
 honestly even when a competitor's ratio is marginally higher.

@@ -244,7 +244,7 @@ def apply_learning(
     skipped_types: set[str],
     adopted_features: set[str],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Filter candidate moments using what Saarthi has already learned, emitting
+    """Filter candidate moments using what Diya has already learned, emitting
     a visible LEARN step for each adaptation. Returns (kept_moments, learn_steps).
 
     * An already-adopted feature is dropped, and the ladder is ADVANCED — the
@@ -291,7 +291,7 @@ def apply_learning(
 
 
 def _learn_state(skipped_types: set[str], adopted_features: set[str]) -> dict[str, Any]:
-    """A compact, persistent profile of what Saarthi has learned about a user."""
+    """A compact, persistent profile of what Diya has learned about a user."""
     adopted = [adoption_ladder.DISPLAY.get(f, f.replace("_", " ").title()) for f in sorted(adopted_features)]
     skipped = [_pretty(t) for t in sorted(skipped_types)]
     bits = []
@@ -299,8 +299,8 @@ def _learn_state(skipped_types: set[str], adopted_features: set[str]) -> dict[st
         bits.append(f"remembers this user adopted {', '.join(adopted)}")
     if skipped:
         bits.append(f"is backing off {', '.join(skipped)}")
-    note = ("Saarthi " + " and ".join(bits) + ".") if bits \
-        else "No feedback yet — Saarthi is still observing this user."
+    note = ("Diya " + " and ".join(bits) + ".") if bits \
+        else "No feedback yet — Diya is still observing this user."
     return {"adopted": adopted, "skipped": skipped, "note": note}
 
 
@@ -418,7 +418,7 @@ def run_agent(
     adopted_features: set[str] | None = None,
 ) -> dict[str, Any]:
     """Entry point. Uses the LLM loop when a key is present, else deterministic.
-    Either way, attaches the learned-profile so the UI can show what Saarthi
+    Either way, attaches the learned-profile so the UI can show what Diya
     remembers about this user."""
     skipped_types = skipped_types or set()
     adopted_features = adopted_features or set()

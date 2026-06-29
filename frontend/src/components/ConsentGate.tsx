@@ -25,13 +25,13 @@ export function ConsentGate({
     lang === 'hi'
       ? {
           title: 'पहले आपकी अनुमति',
-          body: `क्या Saarthi ${cat.hi} का विश्लेषण कर सकता है ताकि वह सहायक सुझाव दे सके? यह कभी भी बंद किया जा सकता है।`,
+          body: `क्या Diya ${cat.hi} का विश्लेषण कर सकता है ताकि वह सहायक सुझाव दे सके? यह कभी भी बंद किया जा सकता है।`,
           allow: 'हाँ, विश्लेषण करें',
           decline: 'अभी नहीं',
         }
       : {
           title: 'Your permission first',
-          body: `May Saarthi analyse ${cat.en} to offer a helpful, opt-in suggestion? You can revoke this anytime.`,
+          body: `May Diya analyse ${cat.en} to offer a helpful, opt-in suggestion? You can revoke this anytime.`,
           allow: 'Yes, analyse',
           decline: 'Not now',
         }

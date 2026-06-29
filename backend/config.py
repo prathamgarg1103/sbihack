@@ -1,4 +1,4 @@
-"""Central configuration for the Saarthi backend.
+"""Central configuration for the Diya backend.
 
 Only ANTHROPIC_API_KEY is strictly required (see CLAUDE.md / .env.example).
 Everything else has a safe local default.
@@ -21,8 +21,8 @@ ANTHROPIC_API_KEY: str | None = os.getenv("ANTHROPIC_API_KEY")
 
 # --- Agent ---
 # Per CLAUDE.md the agent reasoning core runs on claude-sonnet-4-6.
-MODEL: str = os.getenv("SAARTHI_MODEL", "claude-sonnet-4-6")
-MAX_TOKENS: int = int(os.getenv("SAARTHI_MAX_TOKENS", "4096"))
+MODEL: str = os.getenv("DIYA_MODEL", "claude-sonnet-4-6")
+MAX_TOKENS: int = int(os.getenv("DIYA_MAX_TOKENS", "4096"))
 
 # --- Paths ---
 DATA_DIR = BACKEND_DIR / "data"
@@ -31,10 +31,10 @@ TRANSACTIONS_PATH = DATA_DIR / "transactions.json"
 
 # Feedback DB must live somewhere writable. On serverless (Vercel) the only
 # writable path is the temp dir; locally we keep it beside the backend.
-if os.getenv("SAARTHI_DB"):
-    FEEDBACK_DB = Path(os.environ["SAARTHI_DB"])
+if os.getenv("DIYA_DB"):
+    FEEDBACK_DB = Path(os.environ["DIYA_DB"])
 elif os.getenv("VERCEL"):
-    FEEDBACK_DB = Path(tempfile.gettempdir()) / "saarthi_feedback.db"
+    FEEDBACK_DB = Path(tempfile.gettempdir()) / "diya_feedback.db"
 else:
     FEEDBACK_DB = BACKEND_DIR / "feedback.db"
 

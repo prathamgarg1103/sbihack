@@ -2,7 +2,7 @@
 
 The investment-breadth thesis, made concrete: YONO should list the WHOLE market —
 SBI's own funds AND competitors', plus the full equity universe — not just SBI's
-products. Saarthi layers honest guidance on top (including pointing to a non-SBI
+products. Diya layers honest guidance on top (including pointing to a non-SBI
 fund when it genuinely wins). Every figure is grounded in the corpus and clearly
 labelled illustrative — no live quotes, no fabricated numbers.
 """

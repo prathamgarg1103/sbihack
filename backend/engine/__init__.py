@@ -1,1 +1,1 @@
-"""Saarthi agent engine: triggers, RAG, suitability, agent core, XAI, feedback."""
+"""Diya agent engine: triggers, RAG, suitability, agent core, XAI, feedback."""

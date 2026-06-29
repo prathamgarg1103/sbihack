@@ -1,4 +1,4 @@
-# Saarthi — Condensed 8-Slide Deck (for a tight time slot)
+# Diya — Condensed 8-Slide Deck (for a tight time slot)
 
 > The lean cut of `DECK.md` for a ~3-min pitch (deck + the demo video carry the rest). Same design
 > system and colors. Each slide: **ON-SLIDE** (what appears) + **SAY** (one-line voiceover).
@@ -6,9 +6,9 @@
 ---
 
 ## Slide 1 — Title
-**ON-SLIDE:** **Saarthi** · The Agentic Adoption Copilot for YONO · *Trust-first AI that turns
+**ON-SLIDE:** **Diya** · The Agentic Adoption Copilot for YONO · *Trust-first AI that turns
 dormant users into confident ones.* · [Team] · SBI Hackathon @ GFF 2026
-**SAY:** "Saarthi — an agentic AI copilot inside YONO that fixes discovery *and* trust."
+**SAY:** "Diya — an agentic AI copilot inside YONO that fixes discovery *and* trust."
 **VISUAL:** ✦ mark, blue→sky gradient, phone with a nudge card.
 
 ## Slide 2 — The problem & the two wounds
@@ -46,16 +46,16 @@ and shows the row where the *competitor* wins. No invented numbers."
 
 ## Slide 6 — The investment-breadth unlock
 **ON-SLIDE:** **Open the shelf so the honest guide is believed.**
-Groww = breadth, no guidance. Old YONO = narrow + self-dealing. **YONO + Saarthi = breadth + honest
+Groww = breadth, no guidance. Old YONO = narrow + self-dealing. **YONO + Diya = breadth + honest
 guidance — a category of one.** SBI still earns distribution across all AMCs and wins where its
 product is genuinely best.
 **SAY:** "We don't out-breadth Groww. Breadth is the *precondition* that makes honest guidance
 credible — list the whole market, and an SBI-fund recommendation is finally believed."
-**VISUAL:** The breadth×guidance 2×2 (YONO+Saarthi glowing) + the "whole shelf" screenshot inset.
+**VISUAL:** The breadth×guidance 2×2 (YONO+Diya glowing) + the "whole shelf" screenshot inset.
 
 ## Slide 7 — Scale & business
 **ON-SLIDE:** **Lifts revenue *and* removes risk — and scales.**
-- ~**₹100 cr/quarter** fee income; Saarthi lifts adoption across product, platform & engagement.
+- ~**₹100 cr/quarter** fee income; Diya lifts adoption across product, platform & engagement.
 - De-risks the mis-selling exposure SBI must fix. Dormant-user reactivation ≪ new acquisition.
 - **Mission Control:** one loop across the whole base — reusable across **100+ journeys**, white-label.
 **SAY:** "It grows the ~₹100 crore-a-quarter fee income and de-risks it — and the same loop scales
@@ -65,8 +65,8 @@ across 100+ journeys and any bank."
 ## Slide 8 — Feasibility & close
 **ON-SLIDE:** **A working prototype — not slideware.** Claude agent loop + grounded RAG + suitability
 filter + learn store · FastAPI/React · **26 tests** · live on Vercel · synthetic data only.
-**Saarthi turns SBI's two biggest liabilities into its differentiator.**
+**Diya turns SBI's two biggest liabilities into its differentiator.**
 **Try it live:** saarthi-nu.vercel.app · [QR]
-**SAY:** "It runs today — 26 tests, live on Vercel. Saarthi makes SBI's two biggest liabilities the
+**SAY:** "It runs today — 26 tests, live on Vercel. Diya makes SBI's two biggest liabilities the
 reason to choose YONO. Scan to try it."
 **VISUAL:** Tiny architecture strip + big QR to https://saarthi-nu.vercel.app.

@@ -1,4 +1,4 @@
-# Saarthi — Agentic Adoption Copilot for YONO
+# Diya — Agentic Adoption Copilot for YONO
 
 A trust-first, **agentic** AI adoption copilot that lives inside a mocked YONO
 super-app. It watches a user's own (synthetic) transaction patterns, detects

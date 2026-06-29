@@ -1,4 +1,4 @@
-# Saarthi — Pitch Deck Content (Canva-ready)
+# Diya — Pitch Deck Content (Canva-ready)
 
 > Drop each slide into your Canva template. Each block has **ON-SLIDE** (exact text that appears),
 > **SPEAKER NOTES** (what you say), and **VISUAL** (what to put on the slide). 14 slides + 2 backup.
@@ -17,12 +17,12 @@
 ## Slide 1 — Title
 
 **ON-SLIDE**
-- **Saarthi**
+- **Diya**
 - The Agentic Adoption Copilot for YONO
 - *Trust-first AI that turns dormant users into confident ones.*
 - [Team name] · [Member names] · SBI Hackathon @ GFF 2026 — AI & Emerging Tech
 
-**SPEAKER NOTES:** "We're Saarthi — an agentic AI copilot that lives inside YONO and fixes the two
+**SPEAKER NOTES:** "We're Diya — an agentic AI copilot that lives inside YONO and fixes the two
 things stopping people from going deeper: discovery and trust."
 
 **VISUAL:** YONO-blue→sky gradient background, the ✦ mark, a faint phone mockup on the right showing
@@ -69,7 +69,7 @@ Right: app icons (Groww/Zerodha) with an arrow of users leaving YONO. "91%" as a
 
 **ON-SLIDE**
 - **Not cross-sell. Mis-selling remediation — disguised as an adoption engine.**
-- Saarthi moves the sale from a **coercive human channel** → a **transparent, consented,
+- Diya moves the sale from a **coercive human channel** → a **transparent, consented,
   suitability-filtered, explainable digital one.**
 - **Honesty is the moat.**
 
@@ -83,7 +83,7 @@ word "Cross-sell", replace with "Remediation".
 
 ---
 
-## Slide 5 — Meet Saarthi
+## Slide 5 — Meet Diya
 
 **ON-SLIDE**
 - **An agent that reads your *own* transactions and co-pilots the journey you'd never find alone.**
@@ -91,7 +91,7 @@ word "Cross-sell", replace with "Remediation".
 - Every nudge ships with: the trigger · the honest math (incl. charges) · what's *not* covered ·
   "Talk to a human." In your language. Read aloud.
 
-**SPEAKER NOTES:** "Saarthi watches a user's own consented transaction patterns, spots a high-value
+**SPEAKER NOTES:** "Diya watches a user's own consented transaction patterns, spots a high-value
 moment, and co-pilots them through it — in Hindi or English, by voice if they can't read. Every
 nudge is honest by construction."
 
@@ -147,7 +147,7 @@ adoption, and engagement. Flow B is our hero; Flow C is the investment story I'l
 - *"Switch only if it makes sense."* Every figure grounded in a cited corpus. "Talk to a human"
   always one tap away.
 
-**SPEAKER NOTES:** "This is what trust-first looks like. When Saarthi compares an SBI policy to the
+**SPEAKER NOTES:** "This is what trust-first looks like. When Diya compares an SBI policy to the
 competitor the user already pays, it shows the row where the *competitor* wins — a higher claim
 ratio — right next to where SBI is cheaper. No invented numbers. That honesty is exactly what the
 mis-selling channel never gave them."
@@ -164,17 +164,17 @@ mis-selling channel never gave them."
   - Narrow shelf + No guidance → *nobody*
   - Narrow shelf + Guidance → **Old YONO** (feels self-dealing)
   - Whole-market shelf + No guidance → **Groww / Zerodha**
-  - **Whole-market shelf + Honest guidance → YONO + Saarthi ✅**
+  - **Whole-market shelf + Honest guidance → YONO + Diya ✅**
 - Listing competitors *kills* the self-dealing objection — so an SBI-fund recommendation is believed.
   SBI still earns distribution across all AMCs, and wins where its product is genuinely best.
 
 **SPEAKER NOTES:** "Our answer to the investing wound isn't 'be like Groww' — that dilutes SBI's fees
 and needs no AI. It's this: breadth is the *precondition* that makes honest guidance credible. List
-the whole market, and when Saarthi *does* point you to an SBI fund with the honest math, you believe
+the whole market, and when Diya *does* point you to an SBI fund with the honest math, you believe
 it — because it just as readily flagged a cheaper UTI index fund. In our demo, the New Earner opens a
 real shelf with SBI *and* competitor funds and stocks. Neutrality earns trust; trust earns the flow."
 
-**VISUAL:** A clean 2×2 matrix, the bottom-right quadrant ("YONO + Saarthi") glowing mint. Small inset:
+**VISUAL:** A clean 2×2 matrix, the bottom-right quadrant ("YONO + Diya") glowing mint. Small inset:
 the "Markets — the whole shelf" screenshot showing SBI + UTI + Parag Parikh + stocks.
 
 ---
@@ -219,12 +219,12 @@ autonomously") on the dark console.
 **ON-SLIDE**
 - **Lifts revenue *and* removes risk.**
 - YONO earns **~₹100 cr/quarter** in fee income from subsidiary insurance/MF products.
-- Saarthi lifts adoption across **3 dimensions** — product, platform, engagement — *and* de-risks the
+- Diya lifts adoption across **3 dimensions** — product, platform, engagement — *and* de-risks the
   mis-selling exposure SBI is under pressure to fix.
 - Activating a dormant digital user costs a **fraction** of acquiring a new one.
 
 **SPEAKER NOTES:** "The business case writes itself. YONO already earns around ₹100 crore a quarter
-distributing its subsidiaries' products. Saarthi lifts that across three adoption dimensions while
+distributing its subsidiaries' products. Diya lifts that across three adoption dimensions while
 *removing* the regulatory mis-selling risk — and reactivating a dormant user is far cheaper than
 acquiring a new one. We grow the number and de-risk it at the same time."
 
@@ -255,13 +255,13 @@ RAG · Suitability · Feedback] → Claude. Logos for the stack.
 ## Slide 14 — Close
 
 **ON-SLIDE**
-- **Saarthi turns SBI's biggest liabilities — a distrusted insurance channel and a narrow investing
+- **Diya turns SBI's biggest liabilities — a distrusted insurance channel and a narrow investing
   shelf — into its differentiator.**
 - Honest, agentic, consent-first. Lifts adoption. Removes mis-selling risk. Reusable across 100+
   journeys. White-label-ready.
 - **Try it live:** saarthi-nu.vercel.app   ·   [QR code]
 
-**SPEAKER NOTES:** "So: Saarthi takes SBI's two biggest liabilities and makes them the reason to
+**SPEAKER NOTES:** "So: Diya takes SBI's two biggest liabilities and makes them the reason to
 choose YONO. It's live right now — scan the code. Thank you."
 
 **VISUAL:** Big QR to https://saarthi-nu.vercel.app, the tagline, the ✦ mark. Confident, minimal.

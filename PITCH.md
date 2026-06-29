@@ -1,4 +1,4 @@
-# Saarthi — Pitch & Talking Points
+# Diya — Pitch & Talking Points
 
 **Agentic adoption copilot for YONO. Trust-first, not sales-first.**
 SBI Hackathon @ GFF 2026 · "AI & Emerging Tech" · Digital Adoption track.
@@ -7,7 +7,7 @@ SBI Hackathon @ GFF 2026 · "AI & Emerging Tech" · Digital Adoption track.
 
 ## The one-liner
 
-> Saarthi is an autonomous **perceive → reason → act → learn** agent inside YONO that watches a
+> Diya is an autonomous **perceive → reason → act → learn** agent inside YONO that watches a
 > user's *own* transactions, detects high-value adoption moments, and surfaces **just-in-time,
 > vernacular, explainable** nudges — moving the sale from a coercive human channel to a
 > transparent, consented, suitability-filtered digital one.
@@ -27,7 +27,7 @@ distrusted. Two parallel wounds:
    SBI-skewed** — it foregrounds SBI's own products. Anyone wanting real choice + a clean UI just
    leaves for Groww/Zerodha. YONO has **no exclusivity moat** and loses on experience.
 
-**Saarthi's answer to both is the same: honesty as the moat.** We don't out-pitch the salesman or
+**Diya's answer to both is the same: honesty as the moat.** We don't out-pitch the salesman or
 out-breadth Groww. We become the one thing neither will build — a trusted, agentic guide.
 
 ---
@@ -40,10 +40,10 @@ The **strong** play:
 |                       | **No guidance**            | **Honest agentic guidance** |
 |-----------------------|----------------------------|------------------------------|
 | **Narrow shelf**      | Old YONO (self-dealing)    | — (not credible)             |
-| **Whole-market shelf**| Groww / Zerodha            | **YONO + Saarthi** ✅        |
+| **Whole-market shelf**| Groww / Zerodha            | **YONO + Diya** ✅        |
 
 **Breadth is the precondition that makes honest guidance credible.** Once YONO lists the whole
-market, the "self-dealing" objection dies — so when Saarthi *does* surface an SBI fund with the
+market, the "self-dealing" objection dies — so when Diya *does* surface an SBI fund with the
 honest math, it's *believed*. Neutrality earns trust; trust earns the flow. SBI still earns
 distribution commission across all AMCs and wins outright where its product is genuinely best
 (JanNivesh ₹250 SIP, low-cost index funds). **"Open the shelf so the honest guide is believed" —
@@ -59,7 +59,7 @@ higher-returning flexi-cap. Every figure is grounded in the corpus and labelled 
 
 ## Mapped to the four judging criteria
 
-**1. Innovation.** The mis-selling/​self-dealing reframe. Saarthi is **mis-selling remediation
+**1. Innovation.** The mis-selling/​self-dealing reframe. Diya is **mis-selling remediation
 disguised as an adoption engine** — radical transparency (the honest comparison literally shows a
 row where the competitor wins), hard suitability filter (ULIPs auto-blocked), consent-first.
 
@@ -69,7 +69,7 @@ fallback; FAISS-free grounded RAG over a cited corpus; 25 passing tests; deploye
 decision log shows the autonomy live.
 
 **3. Business potential.** YONO earns ~₹100 cr/quarter in fee income from subsidiary
-insurance/MF products. Saarthi lifts adoption across **three dimensions** — products (FD, term,
+insurance/MF products. Diya lifts adoption across **three dimensions** — products (FD, term,
 micro-cover), platform features (Bill Pay → AutoPay → Credit Score ladder), and engagement
 (subscriptions → goals) — *and* de-risks the regulatory mis-selling exposure SBI is already
 scrambling to fix. Activating a dormant digital user costs a fraction of acquiring a new one.
@@ -91,7 +91,7 @@ journeys, white-labelable to any bank.
 
 ## The 30-second close
 
-"Saarthi turns SBI's biggest liabilities — a distrusted insurance channel and a narrow,
+"Diya turns SBI's biggest liabilities — a distrusted insurance channel and a narrow,
 self-dealing investment shelf — into its differentiator. By being the only bank super-app with an
 honest, agentic, consent-first guide, YONO lifts adoption *and* removes the mis-selling risk it's
 under pressure to fix. Same engine, 100+ journeys, any bank."

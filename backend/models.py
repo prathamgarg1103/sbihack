@@ -1,4 +1,4 @@
-"""Shared Pydantic models for the Saarthi backend."""
+"""Shared Pydantic models for the Diya backend."""
 from __future__ import annotations
 
 from enum import Enum

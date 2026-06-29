@@ -116,12 +116,12 @@ export function AgentDecisionLog({
           </div>
         )}
 
-        {/* What Saarthi has learned about this user (the 'learn' close of the loop) */}
+        {/* What Diya has learned about this user (the 'learn' close of the loop) */}
         {learn && (
           <div className="mt-3 border-t border-slate-100 pt-3">
             <div className="flex items-center justify-between">
               <p className="text-[9px] font-bold uppercase tracking-wide text-violet-500">
-                What Saarthi has learned
+                What Diya has learned
               </p>
               {onReset && hasMemory && (
                 <button

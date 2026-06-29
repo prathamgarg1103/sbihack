@@ -1,6 +1,6 @@
 ---
 id: suitability-policy
-title: Saarthi Suitability & Trust Policy (hard rules)
+title: Diya Suitability & Trust Policy (hard rules)
 doc_type: policy
 ---
 

@@ -67,7 +67,7 @@ export function MissionControl() {
               ✦
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Saarthi Mission Control</p>
+              <p className="text-sm font-bold text-white">Diya Mission Control</p>
               <p className="text-[11px] text-slate-400">
                 One agent · every user · the loop running at fleet scale
               </p>

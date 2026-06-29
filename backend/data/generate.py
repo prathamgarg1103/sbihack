@@ -1,4 +1,4 @@
-"""Synthetic data generator for Saarthi.
+"""Synthetic data generator for Diya.
 
 Produces a deterministic, reproducible transaction stream for three seeded
 personas, each engineered to fire exactly one of the demo flows:

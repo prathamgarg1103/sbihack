@@ -1,4 +1,4 @@
-# Saarthi — Agentic Adoption Copilot for YONO
+# Diya — Agentic Adoption Copilot for YONO
 ### Project context for Claude Code
 
 > **How to use this file:** This is the single source of truth for the build. Drop it at the
@@ -11,7 +11,7 @@
 
 ## 0. TL;DR for the agent
 
-We are building **Saarthi**, an **agentic AI adoption copilot** that lives inside a banking
+We are building **Diya**, an **agentic AI adoption copilot** that lives inside a banking
 super-app (modelled on SBI's YONO). It watches a user's own transaction patterns, detects
 high-value "adoption moments," and surfaces **just-in-time, vernacular, trust-first nudges** that
 co-pilot the user through an in-app journey they would otherwise never discover or trust.
@@ -59,7 +59,7 @@ fraction of acquiring a new one. Low competition + high business relevance.
 Real, sourced user pain with YONO, clustered. **Two buckets — respect the split when building
 and pitching.** See Section 13 for sources.
 
-### IN SCOPE — adoption barriers Saarthi solves
+### IN SCOPE — adoption barriers Diya solves
 1. **UX complexity / discoverability.** YONO is widely rated as having poor UX: it crams in
    non-banking services, logs users off mid-task, the interface is "too sophisticated" for
    ordinary users, core journeys (e.g. add-beneficiary) crash mid-flow and force restarts, and
@@ -79,7 +79,7 @@ and pitching.** See Section 13 for sources.
    to smartphone access, language, and awareness. ~35% of Indian women own smartphones; rural UPI
    preference ~38%. Vernacular + voice is the only way to reach this half of the base.
 
-### CONTEXT ONLY — do NOT claim Saarthi fixes these (reference as *cause* of dormancy)
+### CONTEXT ONLY — do NOT claim Diya fixes these (reference as *cause* of dormancy)
 5. **Reliability collapse.** Chronic "Something went wrong" errors; #sbidown trends during
    outages; UPI fails mid-transaction; salaries stuck. This *causes* the distrust that drives
    dormancy — but we do not fix servers.
@@ -89,14 +89,14 @@ and pitching.** See Section 13 for sources.
 ### The reframe that wins the room
 Insurance/investment adoption isn't broken from lack of demand (91% of Indian account-holders are
 open to transaction-based offers). It's broken because the **channel** is a coercive, opaque,
-target-driven human machine customers have learned to fear. **Saarthi moves that sale from a
+target-driven human machine customers have learned to fear. **Diya moves that sale from a
 coercive human channel to a transparent, opt-in, suitability-filtered, explainable digital one.**
 We are not pitching "cross-sell." We are pitching **mis-selling remediation disguised as an
 adoption engine** — something SBI is already scrambling to deliver.
 
 ---
 
-## 4. The solution — Saarthi
+## 4. The solution — Diya
 
 An agentic layer inside the app that runs a continuous **perceive → reason → act → learn** loop:
 
@@ -308,7 +308,7 @@ cannot fabricate numbers.
 
 1. **(0:00) Problem** — one line: 85M YONO users, most touch only UPI; deeper features undiscovered
    and the insurance channel is distrusted due to mis-selling.
-2. **(0:25) Flow B hero** — Premium Leaker persona opens app to pay UPI. Saarthi card slides up in
+2. **(0:25) Flow B hero** — Premium Leaker persona opens app to pay UPI. Diya card slides up in
    Hindi: "We noticed ₹1,240/mo going to [competitor]. Want a 30-sec honest comparison?" →
    side-by-side incl. the row where the competitor wins → "Talk to a human / Skip."
 3. **(1:20) Explainability** — tap "Why am I seeing this?" → trigger + honest math + data used +

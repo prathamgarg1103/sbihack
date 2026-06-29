@@ -1,4 +1,4 @@
-"""Saarthi backend — FastAPI app.
+"""Diya backend — FastAPI app.
 
 Milestone 1 surface: health + synthetic data access. Trigger engine, agent
 loop, RAG, suitability, XAI and feedback routes are layered on in later
@@ -29,7 +29,7 @@ class FeedbackIn(BaseModel):
     detail: str | None = None  # e.g. the adopted feature (bill_pay) for the ladder
 
 app = FastAPI(
-    title="Saarthi — Agentic Adoption Copilot",
+    title="Diya — Agentic Adoption Copilot",
     description="Trust-first, agentic nudges inside a mocked YONO super-app.",
     version="0.1.0",
 )

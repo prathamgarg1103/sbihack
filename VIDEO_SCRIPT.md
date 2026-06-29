@@ -1,4 +1,4 @@
-# Saarthi — 3-Minute Demo Video Script
+# Diya — 3-Minute Demo Video Script
 
 > Recorded walkthrough for the SBI Hackathon (Digital Adoption track).
 > Target length **≈ 2:50**. Shot list + voiceover (VO) + exact clicks.
@@ -20,11 +20,11 @@
 
 ## Scene 1 — The problem (0:00–0:20)
 
-**On screen:** the YONO phone shell (any persona), Saarthi header visible.
+**On screen:** the YONO phone shell (any persona), Diya header visible.
 
 **VO:** "YONO has 85 million users — but most only ever touch UPI and balance-check. The deeper
 features go undiscovered, and the insurance channel is *distrusted*, because it's been sold by a
-coercive, target-driven human machine. Saarthi is an **agentic copilot** that fixes both — by
+coercive, target-driven human machine. Diya is an **agentic copilot** that fixes both — by
 moving the moment from a sales pitch to honest, just-in-time guidance."
 
 ---
@@ -33,7 +33,7 @@ moving the moment from a sales pitch to honest, just-in-time guidance."
 
 **Click:** **Premium Leaker** persona (Rahul). A consent gate slides up **in Hindi**.
 
-**VO:** "Rahul pays a recurring premium to a competitor insurer. Before Saarthi even *analyses*
+**VO:** "Rahul pays a recurring premium to a competitor insurer. Before Diya even *analyses*
 that, it asks permission — consent is first-class."
 
 **Click:** **हाँ, विश्लेषण करें** (Yes, analyse). The nudge appears in Hindi.
@@ -43,7 +43,7 @@ not a pitch."
 
 **Click:** the primary CTA → the **Honest comparison** opens.
 
-**VO (point at the amber box):** "Here's the proof this isn't a sale: Saarthi shows the row where
+**VO (point at the amber box):** "Here's the proof this isn't a sale: Diya shows the row where
 the **competitor wins** — a higher claim-settlement ratio — right next to where SBI is cheaper.
 Every figure is grounded in a cited corpus; nothing is invented."
 
@@ -71,7 +71,7 @@ carries this: *you're seeing this because it fits you — not because it's an SB
 
 **Click:** the **EN / हिं** toggle to English, then the **🔊** speaker.
 
-**VO:** "₹47,000 sitting idle for 152 days, earning 2.7%. Saarthi nudges a Sweep FD — in the user's
+**VO:** "₹47,000 sitting idle for 152 days, earning 2.7%. Diya nudges a Sweep FD — in the user's
 language, and read aloud for low-literacy users. Same trust-first framing."
 
 ---
@@ -83,12 +83,12 @@ language, and read aloud for low-literacy users. Same trust-first framing."
 funds?"*
 
 **VO:** "Here's the investment story. YONO's investing has felt narrow and self-dealing — list mostly
-SBI's own funds — so people leave for Groww. Watch what Saarthi does instead."
+SBI's own funds — so people leave for Groww. Watch what Diya does instead."
 
 **Click:** **See investment options** → the **Markets — the whole shelf** screen opens.
 
 **VO (point at the count chips + the amber box):** "It lists the *whole market* — SBI's funds *and*
-UTI, Parag Parikh, HDFC — plus stocks beyond SBI. And the proof it's honest: Saarthi points you to
+UTI, Parag Parikh, HDFC — plus stocks beyond SBI. And the proof it's honest: Diya points you to
 the **non-SBI** options that win — a cheaper index fund, a higher-returning flexi-cap. Open the shelf,
 and the guidance becomes believable. That's the moat Groww won't build — and SBI still earns on every
 fund it distributes."
@@ -100,12 +100,12 @@ fund it distributes."
 **Click:** **Explorer** persona → allow → complete the **guided walkthrough** (Bill Pay coachmarks)
 → **Great**.
 
-**VO:** "Watch it *learn*. The Explorer never used Bill Pay — Saarthi guides them through it once."
+**VO:** "Watch it *learn*. The Explorer never used Bill Pay — Diya guides them through it once."
 
 **Click:** reselect **Explorer**. Point at the decision log:
 
 **VO:** "Now the agent remembers, advances the **adoption ladder**, and surfaces the next unused
-feature — AutoPay. Adoption compounds. (And if a user skips a category, Saarthi backs off instead
+feature — AutoPay. Adoption compounds. (And if a user skips a category, Diya backs off instead
 of nagging — you can see that in the LEARN step.)"
 
 ---
@@ -124,10 +124,10 @@ across YONO's 100-plus planned journeys. That's the scalability story."
 
 **On screen:** Mission Control (or the comparison) held.
 
-**VO:** "Saarthi moves the sale from a coercive human channel to a transparent, consented,
+**VO:** "Diya moves the sale from a coercive human channel to a transparent, consented,
 suitability-filtered digital one. It lifts adoption across products, platform features *and*
 investments — while removing the mis-selling risk SBI is under regulatory pressure to fix. Same
-framework, white-labelable to any bank. That's Saarthi."
+framework, white-labelable to any bank. That's Diya."
 
 ---
 

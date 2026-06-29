@@ -25,5 +25,5 @@ per year (~₹1,240/month) on a regular-pay basis.
 
 HDFC Life reported a slightly higher FY24 claim settlement ratio of 99.5%. The
 plan structure, exclusions and free-look window are broadly comparable to other
-large insurers. This fact-sheet is included so Saarthi can present an honest,
+large insurers. This fact-sheet is included so Diya can present an honest,
 like-for-like comparison rather than a one-sided pitch.

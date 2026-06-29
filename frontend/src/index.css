@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* Saarthi design tokens — a calm, trust-first banking palette (YONO-ish). */
+/* Diya design tokens — a calm, trust-first banking palette (YONO-ish). */
 @theme {
   --color-yono-ink: #0b1f3a;
   --color-yono-blue: #1755c4;
