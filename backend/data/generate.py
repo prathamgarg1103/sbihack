@@ -6,6 +6,7 @@ personas, each engineered to fire exactly one of the demo flows:
   * Persona 1 — Idle Saver     -> Flow A (idle balance -> sweep FD)
   * Persona 2 — Premium Leaker -> Flow B (competitor premium -> honest compare)
   * Persona 3 — New Earner     -> Flow C (salary jump / travel -> micro-cover)
+  * Persona 6 — Missold        -> Flow M (owned ULIP fails suitability -> flag + exit review)
 
 No real PII, no real money. Run:  python data/generate.py
 Output:  data/transactions.json
@@ -234,6 +235,33 @@ def persona_subscription_saver(rng: random.Random) -> dict:
     }
 
 
+def persona_missold(rng: random.Random) -> dict:
+    """Flow M (reverse mis-selling): an elderly pensioner paying ₹2,500/mo for a
+    ULIP she should never have been sold — Diya flags the bank's own past sale.
+    Also the assisted-mode persona: big-ticket actions need her son's co-consent."""
+    pid = "p6_missold"
+    led = Ledger(pid, opening_balance=8000.0)
+    for m in range(10, 0, -1):
+        led.add(m * 30 + 4, 12000.0, "GOVT PENSION CREDIT", "salary", "NACH")
+        # The mis-sold holding: a recurring ULIP premium (21% of a fixed income).
+        led.add(m * 30 + 3, -2500.0, "SBI LIFE SMART WEALTH ULIP", "premium", "NACH")
+        led.add(m * 30 + 1, -8000.0, "SELF UPI WITHDRAWAL", "transfer", "UPI")
+    _spends(led, rng, start_days=300, end_days=3, n=20, lo=100, hi=600)
+    return {
+        "persona_id": pid,
+        "name": "Shanti Devi",
+        "headline": "Missold Policyholder",
+        "flow": "M",
+        "blurb": "Elderly pensioner paying ₹2,500/mo for a ULIP that fails today's suitability rules.",
+        "language_pref": "hi",
+        "monthly_income": 12000,
+        # Guardian / Sahayak co-consent: actions above ₹10,000 need co-approval.
+        "assisted_mode": True,
+        "guardian": {"name": "Rajesh Kumar", "relation": "Son", "relation_hi": "बेटा"},
+        "ledger": led,
+    }
+
+
 def build() -> dict:
     rng = random.Random(SEED)
     builders = [
@@ -242,6 +270,7 @@ def build() -> dict:
         persona_new_earner,
         persona_explorer,
         persona_subscription_saver,
+        persona_missold,
     ]
     personas_meta: list[dict] = []
     transactions: dict[str, list[dict]] = {}

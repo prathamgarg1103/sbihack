@@ -15,6 +15,8 @@ class TriggerType(str, Enum):
     # Add-on flows (platform / engagement adoption)
     FEATURE_DISCOVERY = "feature_discovery"
     SUBSCRIPTION_SAVER = "subscription_saver"
+    # Reverse mis-selling: a product the user ALREADY OWNS fails suitability.
+    MISSOLD_PRODUCT = "missold_product"
 
 
 class PayeeCategory(str, Enum):

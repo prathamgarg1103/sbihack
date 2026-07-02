@@ -29,3 +29,9 @@ frontend/.vite/
 Thumbs.db
 
 .vercel
+
+# --- Video build artifacts (docs/scripts stay tracked) ---
+video/build/
+video/captures/
+video/narration/
+video/*.mp4

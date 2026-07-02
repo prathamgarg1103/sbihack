@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, type SweepRow } from '../lib/api'
+import { api, type AuditRecord, type AuditVerify, type SweepRow } from '../lib/api'
 
 const ACTION_STYLE: Record<string, { label: string; text: string; dot: string; chip: string }> = {
   surface: { label: 'NUDGE SENT', text: 'text-yono-mint', dot: 'bg-yono-mint', chip: 'bg-yono-mint/15 text-yono-mint' },
@@ -11,7 +11,145 @@ function initials(headline: string): string {
   return headline.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 }
 
+function short(hash: string): string {
+  return `${hash.slice(0, 8)}…${hash.slice(-6)}`
+}
+
+/** One expandable record of the hash-chained suitability-certificate trail. */
+function AuditRow({ r }: { r: AuditRecord }) {
+  const [open, setOpen] = useState(false)
+  const style = ACTION_STYLE[r.action] ?? ACTION_STYLE.stay_silent
+  const p = r.payload ?? {}
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
+      >
+        <span className="w-8 shrink-0 text-[10px] font-bold text-slate-500">#{r.seq}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate text-[12px] font-semibold text-white">{r.persona_id}</p>
+            <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase ${style.chip}`}>
+              {style.label}
+            </span>
+          </div>
+          <p className="truncate text-[11px] text-slate-400">
+            {r.trigger_type} · {r.product} ·{' '}
+            {new Date(r.ts).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+          </p>
+        </div>
+        <span className="shrink-0 text-[10px] text-slate-500">{open ? '▾' : '▸'}</span>
+      </button>
+      {open && (
+        <div className="space-y-1.5 border-t border-white/10 px-3 py-2.5 text-[11px]">
+          {p.nudge_title && (
+            <p className="text-slate-300">
+              <span className="font-bold text-slate-500">nudge · </span>
+              {p.nudge_title}
+            </p>
+          )}
+          {p.suitability && (
+            <p className="text-slate-300">
+              <span className="font-bold text-slate-500">suitability · </span>
+              {p.suitability.suitable
+                ? 'suitable'
+                : `blocked: ${(p.suitability.blocks ?? []).join('; ') || 'n/a'}`}
+            </p>
+          )}
+          {p.devils_advocate?.objection && (
+            <p className="text-slate-300">
+              <span className="font-bold text-rose-400">devil's advocate · </span>“
+              {p.devils_advocate.objection}” → {p.devils_advocate.verdict}
+            </p>
+          )}
+          {p.suppress_reasons && p.suppress_reasons.length > 0 && (
+            <p className="text-slate-300">
+              <span className="font-bold text-yono-amber">suppressed · </span>
+              {p.suppress_reasons.join('; ')}
+            </p>
+          )}
+          <p className="text-slate-300">
+            <span className="font-bold text-slate-500">consent · </span>
+            {p.consent_state ?? 'n/a'}
+            <span className="ml-3 font-bold text-slate-500">engine · </span>
+            {p.engine ?? '?'}
+          </p>
+          <p className="break-all font-mono text-[9px] text-slate-500">
+            prev {short(r.prev_hash)} → this {short(r.hash)}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** The regulator view: every decision, chained and verifiable. */
+function ComplianceTab() {
+  const [records, setRecords] = useState<AuditRecord[]>([])
+  const [verify, setVerify] = useState<AuditVerify | null>(null)
+  const [error, setError] = useState('')
+
+  function load() {
+    api
+      .audit()
+      .then((r) => {
+        setRecords(r.records.slice().reverse()) // newest first
+        setVerify(r.verify)
+      })
+      .catch((e) => setError(String(e)))
+  }
+  useEffect(load, [])
+
+  return (
+    <div className="px-4 pb-4">
+      <div className="mb-3 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5">
+        {verify ? (
+          verify.intact ? (
+            <span className="flex items-center gap-2 text-[12px] font-semibold text-yono-mint">
+              ✓ chain verified · {verify.records} records · SHA-256 linked
+            </span>
+          ) : (
+            <span className="flex items-center gap-2 text-[12px] font-semibold text-rose-400">
+              ⚠ TAMPERED — chain broken at record #{verify.broken_at}
+            </span>
+          )
+        ) : (
+          <span className="text-[12px] text-slate-400">Verifying chain…</span>
+        )}
+        <button
+          onClick={load}
+          className="rounded-lg border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-slate-200 hover:bg-white/10"
+        >
+          Re-verify
+        </button>
+      </div>
+      {error && (
+        <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-[12px] text-amber-300">
+          Couldn't reach the backend ({error}).
+        </p>
+      )}
+      {!error && records.length === 0 && (
+        <p className="px-1 py-3 text-[12px] text-slate-400">
+          No decisions recorded yet — run a nudge or a sweep first. Every decision
+          (surfaced or suppressed) joins the chain automatically.
+        </p>
+      )}
+      <div className="space-y-2">
+        {records.map((r) => (
+          <AuditRow key={r.seq} r={r} />
+        ))}
+      </div>
+      <p className="mt-3 px-1 text-[11px] text-slate-400">
+        Suitability certificate: SBI can hand a regulator a per-recommendation,
+        tamper-evident audit trail — trigger, verdict, objection, consent, action.
+      </p>
+    </div>
+  )
+}
+
 export function MissionControl() {
+  const [tab, setTab] = useState<'feed' | 'compliance'>('feed')
   const [rows, setRows] = useState<SweepRow[]>([])
   const [engine, setEngine] = useState('')
   const [revealed, setRevealed] = useState(0)
@@ -74,6 +212,19 @@ export function MissionControl() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex overflow-hidden rounded-lg border border-white/15 text-[10px] font-bold">
+              {(['feed', 'compliance'] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setTab(v)}
+                  className={`px-2.5 py-1 uppercase ${
+                    tab === v ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {v === 'feed' ? 'Live feed' : 'Compliance'}
+                </button>
+              ))}
+            </div>
             <span
               className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
                 live ? 'bg-yono-mint/20 text-yono-mint' : 'bg-white/10 text-slate-300'
@@ -81,15 +232,23 @@ export function MissionControl() {
             >
               {live ? 'LLM live' : 'rules'}
             </span>
-            <button
-              onClick={run}
-              className="rounded-lg border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-slate-200 hover:bg-white/10"
-            >
-              Re-scan
-            </button>
+            {tab === 'feed' && (
+              <button
+                onClick={run}
+                className="rounded-lg border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-slate-200 hover:bg-white/10"
+              >
+                Re-scan
+              </button>
+            )}
           </div>
         </div>
 
+        {tab === 'compliance' ? (
+          <div className="pt-3">
+            <ComplianceTab />
+          </div>
+        ) : (
+        <>
         {/* Status line */}
         <div className="flex items-center gap-2 px-5 py-2.5 text-[11px]">
           {scanning ? (
@@ -143,6 +302,8 @@ export function MissionControl() {
             )
           })}
         </div>
+        </>
+        )}
 
         {/* Scale tagline */}
         <div className="border-t border-white/10 px-5 py-3">

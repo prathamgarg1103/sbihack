@@ -3,6 +3,8 @@ import type { AgentDecision, DecisionStep } from '../lib/api'
 const STEP_STYLE: Record<string, { dot: string; label: string }> = {
   perceive: { dot: 'bg-slate-400', label: 'PERCEIVE' },
   learn: { dot: 'bg-violet-500', label: 'LEARN' },
+  budget: { dot: 'bg-cyan-500', label: 'BUDGET' },
+  challenge: { dot: 'bg-rose-500', label: "DEVIL'S ADVOCATE" },
   reason: { dot: 'bg-yono-blue', label: 'REASON' },
   suppress: { dot: 'bg-yono-amber', label: 'SUPPRESS' },
   act: { dot: 'bg-yono-mint', label: 'ACT' },

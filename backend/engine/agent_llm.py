@@ -13,10 +13,11 @@ deterministic engine on any exception.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import config
-from engine import comparison, rag, suitability
+from engine import comparison, devils_advocate, rag, suitability
 
 _SYSTEM = """You are Diya, a trust-first, agentic adoption copilot inside a \
 mocked SBI YONO banking app. You are given a user's detected "adoption moments" \
@@ -28,11 +29,29 @@ Non-negotiable rules:
 - Always run check_suitability before surfacing; if it blocks, suppress.
 - For a premium-leak moment, call build_comparison so the user sees an honest,
   like-for-like comparison (including where the competitor wins).
+- A missold_product moment means the user ALREADY OWNS an unsuitable product
+  (e.g. a ULIP the bank itself sold). It is the highest-value moment: FLAG it
+  honestly. The ULIP block applies to recommending products, never to flagging
+  an existing holding — surface it with exit options and a human-advisor path.
+  Do not sell anything in that nudge.
 - Prefer the single highest-value moment; suppress the rest with a reason.
 - Write the nudge in BOTH English and natural Hindi. Keep it short and honest.
 - It is valid to surface nothing.
 
 Use the tools to gather grounding, then finish by calling emit_decision."""
+
+_DA_SYSTEM = """You are the DEVIL'S ADVOCATE inside Diya, a trust-first banking \
+copilot. The primary agent wants to show the user the nudge below. Your only job \
+is to argue why the user should NOT act on it. Consider: lock-in / liquidity \
+risk, emergency-fund depletion, existing-cover overlap, switching costs, market \
+risk, and plain attention cost.
+
+Reply with ONLY a JSON object, no prose:
+{"objection_en": "...", "objection_hi": "...", "strength": "weak" | "strong"}
+
+"strong" means the nudge should be withheld entirely; "weak" means show it but \
+attach your objection so the user sees both sides. Be honest — do not manufacture \
+a strong objection where none exists."""
 
 _TOOLS = [
     {
@@ -95,6 +114,40 @@ _TOOLS = [
         },
     },
 ]
+
+
+def _challenge_llm(client: Any, persona: dict[str, Any], moment: dict[str, Any],
+                   nudge: dict[str, Any] | None) -> dict[str, Any]:
+    """Second LLM pass: argue AGAINST the nudge. Falls back to the rule-based
+    devil's advocate whenever the model's answer can't be parsed."""
+    try:
+        payload = {
+            "persona": {k: persona.get(k) for k in ("persona_id", "name", "monthly_income")},
+            "moment": {k: moment.get(k) for k in ("trigger_type", "summary", "evidence")},
+            "proposed_nudge": nudge,
+        }
+        resp = client.messages.create(
+            model=config.MODEL,
+            max_tokens=600,
+            system=_DA_SYSTEM,
+            messages=[{"role": "user",
+                       "content": "Argue against this nudge:\n"
+                                  + json.dumps(payload, ensure_ascii=False, default=str)}],
+        )
+        text = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
+        m = re.search(r"\{.*\}", text, re.DOTALL)
+        d = json.loads(m.group(0))
+        strong = str(d.get("strength", "weak")).lower() == "strong"
+        return {
+            "objection": {"en": str(d.get("objection_en", "")).strip(),
+                          "hi": str(d.get("objection_hi", "")).strip()},
+            "strength": "strong" if strong else "weak",
+            "score": 0.9 if strong else 0.4,
+            "verdict": "suppress" if strong else "attach",
+            "engine": "anthropic",
+        }
+    except Exception:
+        return devils_advocate.challenge(moment, persona)
 
 
 def _run_tool(name: str, args: dict[str, Any], persona: dict[str, Any]) -> Any:
@@ -173,6 +226,26 @@ def run_agent_llm(
         return {"action": "stay_silent", "decision_log": decision_log,
                 "engine": "anthropic", "model": config.MODEL}
 
+    # Attention budget — identical hard gate to the deterministic path (we never
+    # trust the LLM to honour the cap on its own).
+    pid = persona.get("persona_id", "?")
+    best_severity = max((m.get("severity", "low") for m in moments),
+                        key=lambda s: {"high": 3, "medium": 2, "low": 1}.get(s, 1))
+    status, block = _agent.budget_gate(pid, best_severity)
+    if block:
+        decision_log.append({"step": "budget", "tool": "attention_budget",
+                             "detail": f"{status['used']} of {status['cap']} interruptions "
+                                       "already used this month.",
+                             "result": "blocked"})
+        decision_log.append({"step": "act", "detail": f"Suppressed — {block}"})
+        return {"action": "suppress", "reason": [block], "decision_log": decision_log,
+                "engine": "anthropic", "model": config.MODEL,
+                "attention_budget": status, "budget_suppressed": True}
+    decision_log.append({"step": "budget", "tool": "attention_budget",
+                         "detail": f"{status['remaining']} of {status['cap']} interruptions "
+                                   "left this month — proceeding to reason.",
+                         "result": f"{status['used']}/{status['cap']} used"})
+
     client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
     user = {
         "persona": {k: persona.get(k) for k in ("persona_id", "name", "monthly_income")},
@@ -203,7 +276,24 @@ def run_agent_llm(
         results = []
         for tu in tool_uses:
             if tu.name == "emit_decision":
-                return _finalize(tu.input, moments, persona, adopted_features, decision_log)
+                result = _finalize(tu.input, moments, persona, adopted_features, decision_log)
+                result["attention_budget"] = status
+                # Devil's advocate — a second LLM pass argues AGAINST the nudge.
+                if result["action"] == "surface" and result.get("surfaced_moment"):
+                    ch = _challenge_llm(client, persona, result["surfaced_moment"],
+                                        result.get("nudge"))
+                    decision_log.append({"step": "challenge", "tool": "devils_advocate",
+                                         "detail": f"Arguing against: {ch['objection']['en']}",
+                                         "result": f"{ch['strength']} objection → {ch['verdict']}"})
+                    if ch["verdict"] == "suppress":
+                        decision_log.append({"step": "act",
+                                             "detail": "Suppressed — the devil's advocate "
+                                                       "objection was strong. "
+                                                       + ch["objection"]["en"]})
+                        result.update({"action": "suppress",
+                                       "reason": [ch["objection"]["en"]]})
+                    result["devils_advocate"] = ch
+                return result
             out = _run_tool(tu.name, tu.input, persona)
             decision_log.append({"step": "reason", "tool": tu.name,
                                  "detail": json.dumps(tu.input, ensure_ascii=False),

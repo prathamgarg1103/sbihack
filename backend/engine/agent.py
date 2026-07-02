@@ -25,11 +25,22 @@ from __future__ import annotations
 from typing import Any
 
 import config
-from engine import adoption_ladder, comparison, goal_engine, rag, suitability
+from engine import (
+    adoption_ladder,
+    comparison,
+    coconsent,
+    devils_advocate,
+    feedback,
+    goal_engine,
+    rag,
+    suitability,
+)
 
 # Highest-value first — the agent surfaces one and suppresses the rest.
-# Platform adoption (feature discovery) outranks product sales for this demo.
+# Flagging our own past mis-sale outranks everything (bank integrity first);
+# platform adoption (feature discovery) outranks product sales for this demo.
 PRIORITY = [
+    "missold_product",
     "feature_discovery",
     "premium_leak",
     "subscription_saver",
@@ -37,6 +48,9 @@ PRIORITY = [
     "salary_jump",       # income grew → honest open-shelf investing (Flow C hero)
     "contextual_spend",
 ]
+
+# Severity → interruption value (used by the attention-budget gate).
+_VALUE = {"high": 3, "medium": 2, "low": 1}
 
 
 def _order(moments: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -80,10 +94,43 @@ def _product_for(moment: dict[str, Any]) -> dict[str, Any]:
 _NEUTRALITY_CATEGORIES = {"fixed_deposit", "insurance_compare", "subscription_review"}
 
 
+# --- Attention budget gate (Feature: hard cap on interruptions) -------------
+def budget_gate(persona_id: str, severity: str) -> tuple[dict[str, Any], str | None]:
+    """Check the monthly interruption budget BEFORE surfacing.
+    Returns (status, block_reason). block_reason is None when it's OK to spend."""
+    status = feedback.budget_status(persona_id)
+    if status["remaining"] <= 0:
+        return status, (
+            f"attention budget exhausted — Diya already used all {status['cap']} "
+            "interruptions this month; this moment is not worth breaking the cap."
+        )
+    if status["remaining"] == 1 and _VALUE.get(severity, 1) <= 1:
+        return status, (
+            "only 1 interruption left this month — a low-value moment is not "
+            "worth spending it on."
+        )
+    return status, None
+
+
 # --- Bilingual copy ---------------------------------------------------------
 def _bilingual(moment: dict[str, Any]) -> dict[str, dict[str, str]]:
     t = moment["trigger_type"]
     e = moment.get("evidence", {})
+    if t == "missold_product":
+        prod = e.get("product", "this policy")
+        m, pct = _rupee(e.get("monthly_premium")), e.get("income_pct")
+        return {
+            "title": {"en": "A policy you hold doesn't fit you",
+                      "hi": "आपकी एक पॉलिसी आपके लिए ठीक नहीं लगती"},
+            "body": {"en": f"You pay ₹{m}/month for {prod} — a ULIP. That is {pct}% of your "
+                           "income and it fails the suitability rules we apply today. We are "
+                           "flagging our own past sale. You may have exit options.",
+                     "hi": f"आप {prod} के लिए हर महीने ₹{m} देती हैं — यह एक ULIP है। यह आपकी आय "
+                           f"का {pct}% है और आज के हमारे उपयुक्तता नियमों पर खरी नहीं उतरती। हम "
+                           "अपनी ही पुरानी बिक्री को चिह्नित कर रहे हैं। आपके पास बाहर निकलने के "
+                           "विकल्प हो सकते हैं।"},
+            "cta": {"en": "See exit options", "hi": "एग्ज़िट विकल्प देखें"},
+        }
     if t == "premium_leak":
         comp, m, y = e.get("competitor"), _rupee(e.get("monthly_premium")), _rupee(e.get("annual_premium"))
         return {
@@ -172,6 +219,28 @@ def materialize_flow(
     tt = moment["trigger_type"]
     e = moment.get("evidence", {})
 
+    if tt == "missold_product":
+        # The bank flags its own past sale: re-run the suitability verdict (the
+        # evidence for the flag) + honest exit-vs-stay math from the fact-sheet.
+        fit = suitability.check_suitability(
+            product_type="ulip", monthly_cost=float(e.get("monthly_premium", 0) or 0),
+            persona=persona,
+        )
+        payload: dict[str, Any] = {
+            "flow": "missold",
+            "suitability": fit,
+            "exit_analysis": comparison.build_ulip_exit_analysis(
+                float(e.get("monthly_premium", 0) or 0),
+                int(e.get("months_paid", 0) or 0),
+                doc_id=str(e.get("doc_id") or "sbi-life-smart-wealth-ulip"),
+            ),
+        }
+        gate = coconsent.gate(persona, float(e.get("annual_premium", 0) or 0),
+                              action="ulip_exit_review")
+        if gate:
+            payload["coconsent"] = gate
+        return payload
+
     if moment.get("suggested_category") == "invest_shelf":
         from engine import investment_shelf
         return {
@@ -227,7 +296,7 @@ def materialize_flow(
         tt == "premium_leak"
         and comparison.build_insurance_comparison(e.get("competitor")) is not None
     )
-    return {
+    out: dict[str, Any] = {
         "flow": "product",
         "product": product,
         "suitability": fit,
@@ -235,6 +304,17 @@ def materialize_flow(
         # The open-shelf neutrality line is shown for SBI-product surfaces.
         "neutral_disclosure": moment["suggested_category"] in _NEUTRALITY_CATEGORIES,
     }
+    # Do-nothing baseline for idle cash (grounded: savings rate vs inflation).
+    if tt == "idle_balance":
+        dn = comparison.build_do_nothing_idle(float(e.get("idle_amount", 0) or 0))
+        if dn:
+            out["do_nothing"] = dn
+        # Assisted mode: moving a big idle sum needs guardian co-approval.
+        gate = coconsent.gate(persona, float(e.get("idle_amount", 0) or 0),
+                              action="open_sweep_fd")
+        if gate:
+            out["coconsent"] = gate
+    return out
 
 
 # --- The learn close of the loop (shared by BOTH engines) -------------------
@@ -346,6 +426,35 @@ def _decide_subscription(persona, hero, suppressed, log) -> dict[str, Any]:
     return out
 
 
+def _decide_missold(persona, hero, suppressed, log) -> dict[str, Any]:
+    """Reverse mis-selling: the bank flags its own past sale, honestly."""
+    e = hero["evidence"]
+    hits = rag.query_rag("ULIP surrender charge free look discontinuance", 3)
+    log.append({"step": "reason", "tool": "query_rag",
+                "detail": "ULIP fact-sheet (charges, surrender, free-look)",
+                "result": [h["id"] for h in hits]})
+    fit = suitability.check_suitability(
+        product_type="ulip", monthly_cost=float(e.get("monthly_premium", 0) or 0),
+        persona=persona)
+    log.append({"step": "reason", "tool": "check_suitability",
+                "detail": f"the ULIP this user ALREADY HOLDS @ ₹{_rupee(e.get('monthly_premium'))}/mo",
+                "result": "; ".join(fit["blocks"]) or "suitable"})
+    exit_analysis = comparison.build_ulip_exit_analysis(
+        float(e.get("monthly_premium", 0) or 0), int(e.get("months_paid", 0) or 0),
+        doc_id=str(e.get("doc_id") or "sbi-life-smart-wealth-ulip"))
+    if exit_analysis:
+        log.append({"step": "reason", "tool": "build_exit_analysis",
+                    "detail": "honest exit-cost vs stay math from the fact-sheet",
+                    "result": f"exit now ≈ ₹{_rupee(exit_analysis['exit_now']['refund_estimate'])} "
+                              f"back; staying costs ₹{_rupee(exit_analysis['stay']['annual_premium'])}/yr"})
+    log.append({"step": "act", "detail": "Flagging the bank's OWN past sale — this holding fails "
+                                         "the rules we apply today. Surfacing exit options with "
+                                         "honest math + a human-advisor path. Not a sale."})
+    out = _base(hero, suppressed, log, _bilingual(hero))
+    out.update(materialize_flow(persona, hero))
+    return out
+
+
 def _decide_product(persona, hero, suppressed, log) -> dict[str, Any]:
     product = _product_for(hero)
     rag_q = f"{product['type'].replace('_',' ')} {hero['trigger_type'].replace('_',' ')}"
@@ -402,12 +511,49 @@ def run_agent_deterministic(
         log.append({"step": "suppress", "tool": None,
                     "detail": f"Suppressed {s['trigger_type']} — {s['reason']}."})
 
+    # Attention budget: is this worth one of the month's few interruptions?
+    status, block = budget_gate(pid, hero.get("severity", "low"))
+    if block:
+        log.append({"step": "budget", "tool": "attention_budget",
+                    "detail": f"{status['used']} of {status['cap']} interruptions already "
+                              "used this month.",
+                    "result": "blocked"})
+        log.append({"step": "act", "detail": f"Suppressed — {block}"})
+        return {"action": "suppress", "reason": [block], "suppressed": suppressed,
+                "decision_log": log, "engine": "deterministic",
+                "attention_budget": status, "budget_suppressed": True}
+    log.append({"step": "budget", "tool": "attention_budget",
+                "detail": f"{status['remaining']} of {status['cap']} interruptions left this "
+                          f"month — a {hero.get('severity', '?')}-value moment is worth one.",
+                "result": f"{status['used']}/{status['cap']} used"})
+
+    # Devil's advocate: argue AGAINST the nudge before it can surface.
+    ch = devils_advocate.challenge(hero, persona)
+    log.append({"step": "challenge", "tool": "devils_advocate",
+                "detail": f"Arguing against: {ch['objection']['en']}",
+                "result": f"{ch['strength']} objection → {ch['verdict']}"})
+    if ch["verdict"] == "suppress":
+        log.append({"step": "act",
+                    "detail": "Suppressed — the devil's advocate objection was strong. "
+                              + ch["objection"]["en"]})
+        return {"action": "suppress", "reason": [ch["objection"]["en"]],
+                "devils_advocate": ch, "suppressed": suppressed, "decision_log": log,
+                "engine": "deterministic", "attention_budget": status}
+
     tt = hero["trigger_type"]
-    if tt == "feature_discovery":
-        return _decide_feature_discovery(persona, hero, suppressed, log, adopted_features)
-    if tt == "subscription_saver":
-        return _decide_subscription(persona, hero, suppressed, log)
-    return _decide_product(persona, hero, suppressed, log)
+    if tt == "missold_product":
+        out = _decide_missold(persona, hero, suppressed, log)
+    elif tt == "feature_discovery":
+        out = _decide_feature_discovery(persona, hero, suppressed, log, adopted_features)
+    elif tt == "subscription_saver":
+        out = _decide_subscription(persona, hero, suppressed, log)
+    else:
+        out = _decide_product(persona, hero, suppressed, log)
+    if out.get("action") == "surface":
+        # Weak objection: attach it so the XAI card shows both sides.
+        out["devils_advocate"] = ch
+    out.setdefault("attention_budget", status)
+    return out
 
 
 def run_agent(
@@ -416,10 +562,12 @@ def run_agent(
     *,
     skipped_types: set[str] | None = None,
     adopted_features: set[str] | None = None,
+    spend: bool = True,
 ) -> dict[str, Any]:
     """Entry point. Uses the LLM loop when a key is present, else deterministic.
-    Either way, attaches the learned-profile so the UI can show what Diya
-    remembers about this user."""
+    Either way: attaches the learned-profile, spends the attention budget when a
+    nudge actually surfaces (unless spend=False, e.g. the read-only fleet sweep),
+    and appends the decision to the hash-chained compliance audit trail."""
     skipped_types = skipped_types or set()
     adopted_features = adopted_features or set()
     if config.has_api_key():
@@ -436,4 +584,17 @@ def run_agent(
         result = run_agent_deterministic(persona, moments, skipped_types=skipped_types,
                                          adopted_features=adopted_features)
     result["learn_state"] = _learn_state(skipped_types, adopted_features)
+
+    pid = persona.get("persona_id", "?")
+    result.setdefault("attention_budget", feedback.budget_status(pid))
+    if spend and result.get("action") == "surface":
+        result["attention_budget"] = feedback.spend_budget(pid)
+
+    # Compliance: every decision — surfaced or suppressed — joins the chain.
+    try:
+        from engine import audit
+
+        audit.record_decision(persona, result)
+    except Exception:  # the audit trail must never break the demo
+        pass
     return result

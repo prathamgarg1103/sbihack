@@ -7,6 +7,7 @@ const CATEGORY_LABEL: Record<string, { en: string; hi: string }> = {
   idle_balance: { en: 'your savings balance', hi: 'आपकी बचत राशि' },
   contextual_spend: { en: 'your recent spending', hi: 'आपके हाल के खर्च' },
   salary_jump: { en: 'your income', hi: 'आपकी आय' },
+  missold_product: { en: 'your existing policies', hi: 'आपकी मौजूदा पॉलिसियाँ' },
 }
 
 export function ConsentGate({

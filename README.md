@@ -80,6 +80,7 @@ three demo flows.
 | **S** | Priya Nair — *Subscription Saver* | unused subscription renewing soon → review + pause mandate + redirect savings to a goal |
 | **A** | Aarti Sharma — *Idle Saver* | ~₹47k sitting idle 90+ days → sweep-FD nudge |
 | **C** | Sneha Iyer — *New Earner* | salary jump + MakeMyTrip spend → contextual micro-cover |
+| **M** | Shanti Devi — *Missold Policyholder* | recurring ₹2,500/mo ULIP she already owns fails suitability → **Diya flags the bank's own past sale** + honest exit review + guardian co-consent |
 
 ---
 
@@ -113,8 +114,26 @@ nudge carries "Skip" + "Talk to a human advisor" · consent is revocable.
 - [x] **M9** — polish + demo script (below) + deployed to Vercel
 - [x] **Add-ons** — Flow D (feature discovery + coachmark walkthrough, hero), Subscription
       Saver (mandate pause + savings redirect), Goal Engine + adoption ladder, 4 tests
+- [x] **Governance features (6)** —
+      1. **Reverse mis-selling detector** — flags a ULIP the user *already owns* that fails
+         today's suitability rules (Flow M, Shanti Devi); honest exit-cost-vs-stay math grounded
+         in a ULIP fact-sheet (surrender charge, free-look, lock-in).
+      2. **Devil's advocate agent** — a second reasoning pass argues *against* every nudge; a
+         strong objection suppresses it, a weak one is shown on the "Why am I seeing this?" card.
+         LLM second-pass when a key is set; deterministic canned-objection fallback otherwise.
+      3. **Attention budget** — hard cap of 4 interruptions per user per month (SQLite-persisted);
+         checked *before* surfacing; an always-visible meter in the app shell.
+      4. **Guardian / Sahayak co-consent** — assisted-mode personas need a guardian's
+         co-approval (mock side-by-side "guardian's phone") for steps above ₹10,000;
+         pending→approved/declined state machine.
+      5. **Suitability certificate** — every decision (surfaced OR suppressed) appended to a
+         SHA-256 hash-chained audit trail; `/audit/verify` reports intact/tampered; a
+         "Compliance" tab in Mission Control shows the chain with a ✓ verified badge.
+      6. **Do-nothing baseline** — every comparison includes a third "Do nothing" column with
+         the honest cost of inaction (inflation vs savings rate; staying with the competitor) —
+         including where doing nothing genuinely wins.
 
-**21 tests passing** · **deployed** at https://saarthi-nu.vercel.app. Set `ANTHROPIC_API_KEY`
+**44 tests passing** · **deployed** at https://saarthi-nu.vercel.app. Set `ANTHROPIC_API_KEY`
 (`.env` locally, or a Vercel env var) to upgrade the agent from the deterministic fallback to
 the live `claude-sonnet-4-6` tool-calling loop.
 

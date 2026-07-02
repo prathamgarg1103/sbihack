@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 import config
 from data import generate as datagen
-from engine import agent, comparison, feedback, rag, triggers
+from engine import agent, audit, coconsent, comparison, feedback, rag, triggers
 from models import TriggerType
 
 
@@ -27,6 +27,12 @@ class FeedbackIn(BaseModel):
     trigger_type: str
     outcome: str  # adopted | skipped | escalated
     detail: str | None = None  # e.g. the adopted feature (bill_pay) for the ladder
+
+
+class CoConsentIn(BaseModel):
+    persona_id: str
+    action: str
+    amount: float
 
 app = FastAPI(
     title="Diya — Agentic Adoption Copilot",
@@ -165,6 +171,7 @@ _FLOW_LABEL = {
     "C": "Salary jump → Open-shelf investing",
     "D": "Feature blind-spot → Guided discovery",
     "S": "Subscriptions → Save & redirect",
+    "M": "Missold ULIP → Honest exit review",
 }
 
 
@@ -200,6 +207,7 @@ def agent_sweep() -> dict[str, Any]:
             moments,
             skipped_types=feedback.skipped_categories(pid),
             adopted_features=feedback.adopted_features(pid),
+            spend=False,  # the fleet sweep observes; it must not burn user budgets
         )
         engine = decision.get("engine", engine)
         surfaced = (decision.get("surfaced_moment") or {}).get("trigger_type")
@@ -227,9 +235,71 @@ def post_feedback(fb: FeedbackIn) -> dict[str, Any]:
 
 @app.delete("/feedback/{persona_id}")
 def reset_feedback(persona_id: str) -> dict[str, Any]:
-    """Clear feedback for a persona — handy to re-run the demo cleanly."""
+    """Clear feedback + attention budget + co-consent — re-run the demo cleanly.
+    (The audit chain is append-only and is deliberately NOT cleared.)"""
     feedback.reset(persona_id)
+    coconsent.reset(persona_id)
     return {"reset": persona_id}
+
+
+@app.get("/personas/{persona_id}/budget")
+def persona_budget(persona_id: str) -> dict[str, Any]:
+    """Attention budget: how many of this month's interruptions Diya has used."""
+    data = _load_dataset()
+    _persona_meta(data, persona_id)
+    return feedback.budget_status(persona_id)
+
+
+@app.post("/coconsent/request")
+def coconsent_request(body: CoConsentIn) -> dict[str, Any]:
+    """Guardian / Sahayak co-consent: open a pending approval request."""
+    data = _load_dataset()
+    meta = _persona_meta(data, body.persona_id)
+    gate = coconsent.gate(meta, body.amount, action=body.action)
+    if gate is None:
+        return {"required": False}
+    rec = coconsent.request(body.persona_id, body.action, body.amount,
+                            guardian=meta.get("guardian"))
+    return {"required": True, "request": rec}
+
+
+@app.post("/coconsent/{request_id}/approve")
+def coconsent_approve(request_id: str) -> dict[str, Any]:
+    """Mock guardian taps APPROVE on their phone (state: pending → approved)."""
+    try:
+        return coconsent.decide(request_id, approve=True)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+
+
+@app.post("/coconsent/{request_id}/decline")
+def coconsent_decline(request_id: str) -> dict[str, Any]:
+    """Mock guardian taps DECLINE (state: pending → declined)."""
+    try:
+        return coconsent.decide(request_id, approve=False)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+
+
+@app.get("/coconsent/{request_id}")
+def coconsent_status(request_id: str) -> dict[str, Any]:
+    rec = coconsent.get(request_id)
+    if rec is None:
+        raise HTTPException(status_code=404, detail=f"Unknown request '{request_id}'")
+    return rec
+
+
+@app.get("/audit")
+def audit_chain(limit: int = 100) -> dict[str, Any]:
+    """The hash-chained compliance trail: every decision, surfaced or suppressed,
+    with a verification pass over the WHOLE chain."""
+    return {"verify": audit.verify(), "records": audit.chain(limit)}
+
+
+@app.get("/audit/verify")
+def audit_verify() -> dict[str, Any]:
+    """Walk the chain and report intact / tampered (first broken record)."""
+    return audit.verify()
 
 
 @app.get("/personas/{persona_id}/comparison")

@@ -19,6 +19,12 @@ function chips(m: Moment): string[] {
       return [`₹${rupee(e.previous_salary as number)} → ₹${rupee(e.latest_salary as number)}`, `+${e.increase_pct}%`]
     case 'contextual_spend':
       return [`₹${rupee(e.amount as number)}`, String(e.spend_kind), String(e.cover_type)]
+    case 'missold_product':
+      return [
+        `₹${rupee(e.monthly_premium as number)}/mo`,
+        `paid ₹${rupee(e.paid_so_far as number)}`,
+        `${e.income_pct}% of income`,
+      ]
     default:
       return []
   }
@@ -27,7 +33,11 @@ function chips(m: Moment): string[] {
 function dataUsed(m: Moment): [string, string][] {
   return Object.entries(m.evidence).map(([k, v]) => [
     k.replace(/_/g, ' '),
-    typeof v === 'number' && /amount|premium|salary/.test(k) ? `₹${rupee(v)}` : String(v),
+    typeof v === 'number' && /amount|premium|salary|paid/.test(k)
+      ? `₹${rupee(v)}`
+      : Array.isArray(v)
+        ? v.join('; ')
+        : String(v),
   ])
 }
 
@@ -59,19 +69,36 @@ export function NudgeCard({
   const moment = decision.surfaced_moment
   const nudge = decision.nudge
   if (!moment || !nudge) return null
+  // Reverse mis-selling gets a visually distinct card: the bank is flagging
+  // its OWN past sale, not selling anything.
+  const missold = decision.flow === 'missold'
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-30 px-3 pb-3">
-      <div className="rounded-3xl bg-white p-4 shadow-[0_-8px_40px_rgba(11,31,58,0.25)] ring-1 ring-slate-200">
+      <div
+        className={`rounded-3xl bg-white p-4 shadow-[0_-8px_40px_rgba(11,31,58,0.25)] ring-1 ${
+          missold ? 'ring-2 ring-rose-300' : 'ring-slate-200'
+        }`}
+      >
         {/* Agent header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-yono-blue to-yono-mint text-xs font-bold text-white">
-              ✦
+            <div
+              className={`grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br text-xs font-bold text-white ${
+                missold ? 'from-rose-500 to-amber-500' : 'from-yono-blue to-yono-mint'
+              }`}
+            >
+              {missold ? '⚑' : '✦'}
             </div>
             <span className="text-sm font-semibold text-yono-ink">Diya</span>
-            <span className="rounded-full bg-yono-mint/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-yono-mint">
-              guidance · not a sale
+            <span
+              className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+                missold ? 'bg-rose-100 text-rose-600' : 'bg-yono-mint/15 text-yono-mint'
+              }`}
+            >
+              {missold
+                ? lang === 'hi' ? 'हमारी अपनी बिक्री पर सवाल' : 'flagging our own sale'
+                : 'guidance · not a sale'}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -149,6 +176,34 @@ export function NudgeCard({
                 </div>
               ))}
             </dl>
+            {/* Both sides of the argument: what the devil's advocate said */}
+            {decision.devils_advocate && (
+              <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50/70 px-2.5 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-rose-600">
+                  {lang === 'hi' ? 'हमारे डेविल्स एडवोकेट ने कहा' : "What our devil's advocate said"}
+                </p>
+                <p className="mt-0.5 text-[11px] leading-snug text-slate-600">
+                  “{decision.devils_advocate.objection[lang]}”
+                </p>
+                <p className="mt-0.5 text-[9px] font-semibold uppercase text-rose-400">
+                  {decision.devils_advocate.strength} objection · shown anyway, honestly
+                </p>
+              </div>
+            )}
+            {/* The do-nothing baseline: inaction has a cost too — stated honestly */}
+            {decision.do_nothing && (
+              <div className="mt-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                  {decision.do_nothing.label[lang]}
+                </p>
+                <p className="mt-0.5 text-[11px] leading-snug text-slate-600">
+                  {decision.do_nothing.detail[lang]}
+                </p>
+                <p className="mt-0.5 text-[10px] italic text-slate-400">
+                  {decision.do_nothing.honest_note[lang]} · {decision.do_nothing.source}
+                </p>
+              </div>
+            )}
             <p className="mt-2 text-[11px] italic text-slate-500">
               This is guidance, not a sale. No data leaves your account without consent.
             </p>
@@ -169,7 +224,9 @@ export function NudgeCard({
           <>
             <button
               onClick={onPrimary}
-              className="mt-3 w-full rounded-xl bg-yono-blue py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-yono-blue/90"
+              className={`mt-3 w-full rounded-xl py-2.5 text-sm font-semibold text-white shadow-sm transition ${
+                missold ? 'bg-rose-600 hover:bg-rose-600/90' : 'bg-yono-blue hover:bg-yono-blue/90'
+              }`}
             >
               {nudge.cta[lang]}
             </button>
@@ -184,7 +241,9 @@ export function NudgeCard({
                 {lang === 'hi' ? 'सलाहकार से बात करें' : 'Talk to a human advisor'}
               </button>
               <button onClick={onSkip} className="rounded-xl px-4 py-2 text-[12px] font-medium text-slate-400 hover:text-slate-600">
-                {lang === 'hi' ? 'छोड़ें' : 'Skip'}
+                {missold
+                  ? lang === 'hi' ? 'पॉलिसी रखें' : 'Keep policy'
+                  : lang === 'hi' ? 'छोड़ें' : 'Skip'}
               </button>
             </div>
           </>

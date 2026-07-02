@@ -9,22 +9,32 @@ function cellClass(win: boolean): string {
 
 function Row({ r }: { r: ComparisonRow }) {
   const long = r.dimension === 'Key exclusion'
+  const hasDoNothing = r.do_nothing != null
   return (
     <div className="border-b border-slate-100 last:border-0">
       <p className="px-3 pt-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">
         {r.dimension}
       </p>
-      <div className={`grid ${long ? 'grid-cols-1 gap-1' : 'grid-cols-2'} px-1 pb-2`}>
-        <div className={`rounded-lg px-2 py-1.5 text-[12px] ${cellClass(r.winner === 'sbi')}`}>
+      <div
+        className={`grid ${long ? 'grid-cols-1 gap-1' : hasDoNothing ? 'grid-cols-3' : 'grid-cols-2'} px-1 pb-2`}
+      >
+        <div className={`rounded-lg px-2 py-1.5 text-[11px] ${cellClass(r.winner === 'sbi')}`}>
           {r.winner === 'sbi' && <span className="mr-1 text-yono-mint">✓</span>}
           {long && <span className="text-[9px] text-slate-400">SBI Life · </span>}
           {r.sbi}
         </div>
-        <div className={`rounded-lg px-2 py-1.5 text-[12px] ${cellClass(r.winner === 'competitor')}`}>
+        <div className={`rounded-lg px-2 py-1.5 text-[11px] ${cellClass(r.winner === 'competitor')}`}>
           {r.winner === 'competitor' && <span className="mr-1 text-yono-mint">✓</span>}
           {long && <span className="text-[9px] text-slate-400">Competitor · </span>}
           {r.competitor}
         </div>
+        {hasDoNothing && (
+          <div className={`rounded-lg px-2 py-1.5 text-[11px] ${cellClass(r.winner === 'do_nothing')}`}>
+            {r.winner === 'do_nothing' && <span className="mr-1 text-yono-mint">✓</span>}
+            {long && <span className="text-[9px] text-slate-400">Do nothing · </span>}
+            {r.do_nothing}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -54,15 +64,19 @@ export function ComparisonTable({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pb-3">
-        {/* Column headers */}
-        <div className="sticky top-0 z-10 grid grid-cols-2 gap-1 bg-white pt-2">
+        {/* Column headers — incl. the honest third option: doing nothing */}
+        <div className="sticky top-0 z-10 grid grid-cols-3 gap-1 bg-white pt-2">
           <div className="rounded-lg bg-yono-blue/5 px-2 py-1.5 text-center">
-            <p className="text-[12px] font-bold text-yono-blue">{data.sbi_product.insurer}</p>
+            <p className="text-[11px] font-bold text-yono-blue">{data.sbi_product.insurer}</p>
             <p className="text-[9px] text-slate-400">yours, if you switch</p>
           </div>
           <div className="rounded-lg bg-slate-100 px-2 py-1.5 text-center">
-            <p className="text-[12px] font-bold text-slate-600">{data.competitor_product.insurer}</p>
+            <p className="text-[11px] font-bold text-slate-600">{data.competitor_product.insurer}</p>
             <p className="text-[9px] text-slate-400">what you pay now</p>
+          </div>
+          <div className="rounded-lg border border-dashed border-slate-300 bg-white px-2 py-1.5 text-center">
+            <p className="text-[11px] font-bold text-slate-600">Do nothing</p>
+            <p className="text-[9px] text-slate-400">stay as you are</p>
           </div>
         </div>
 
@@ -80,6 +94,17 @@ export function ComparisonTable({
               Where {data.competitor_product.insurer} wins
             </p>
             <p className="text-[12px] text-amber-900">{data.competitor_wins.join(', ')}.</p>
+          </div>
+        )}
+
+        {/* Where doing nothing wins — inaction is a real option, honestly framed */}
+        {data.do_nothing_wins && data.do_nothing_wins.length > 0 && (
+          <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <p className="text-[11px] font-bold text-slate-600">Where doing nothing wins</p>
+            <p className="text-[12px] text-slate-700">{data.do_nothing_wins.join(', ')}.</p>
+            {data.do_nothing_note && (
+              <p className="mt-1 text-[11px] leading-snug text-slate-500">{data.do_nothing_note}</p>
+            )}
           </div>
         )}
 

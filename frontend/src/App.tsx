@@ -3,6 +3,7 @@ import {
   api,
   type AgentDecision,
   type Comparison,
+  type CoconsentRequest,
   type Persona,
   type Txn,
 } from './lib/api'
@@ -14,6 +15,9 @@ import { CoachmarkWalkthrough } from './components/CoachmarkWalkthrough'
 import { SubscriptionDashboard } from './components/SubscriptionDashboard'
 import { InvestmentShelf } from './components/InvestmentShelf'
 import { MissionControl } from './components/MissionControl'
+import { ExitOptionsCard } from './components/ExitOptionsCard'
+import { GuardianPhone, GuardianWait } from './components/GuardianConsent'
+import { AttentionMeter } from './components/AttentionMeter'
 
 type Lang = 'en' | 'hi'
 type View = 'demo' | 'mission'
@@ -24,9 +28,23 @@ const FLOW_LABEL: Record<string, string> = {
   C: 'Salary jump → Open-shelf investing',
   D: 'Feature blind-spot → Guided discovery',
   S: 'Subscriptions → Save & redirect',
+  M: 'Missold ULIP → Honest exit review',
 }
 
 const QUICK_ACTIONS = ['Scan & Pay', 'To Mobile', 'To Bank A/C', 'Balance', 'Recharge', 'Bills']
+
+// The nudge endpoint SPENDS attention budget when it surfaces, so near-simultaneous
+// duplicate fetches (React StrictMode double-mounting in dev) must share one request.
+const nudgeInFlight = new Map<string, Promise<AgentDecision>>()
+function fetchNudgeDeduped(id: string): Promise<AgentDecision> {
+  let p = nudgeInFlight.get(id)
+  if (!p) {
+    p = api.nudge(id)
+    nudgeInFlight.set(id, p)
+    p.finally(() => setTimeout(() => nudgeInFlight.delete(id), 400)).catch(() => {})
+  }
+  return p
+}
 
 function rupee(n: number): string {
   return n.toLocaleString('en-IN', { maximumFractionDigits: 0 })
@@ -78,6 +96,8 @@ export default function App() {
   const [walkthroughOpen, setWalkthroughOpen] = useState(false)
   const [subscriptionOpen, setSubscriptionOpen] = useState(false)
   const [investmentOpen, setInvestmentOpen] = useState(false)
+  const [exitOpen, setExitOpen] = useState(false)
+  const [guardianReq, setGuardianReq] = useState<CoconsentRequest | null>(null)
   const [view, setView] = useState<View>('demo')
   const [error, setError] = useState<string>('')
 
@@ -99,6 +119,8 @@ export default function App() {
     setWalkthroughOpen(false)
     setSubscriptionOpen(false)
     setInvestmentOpen(false)
+    setExitOpen(false)
+    setGuardianReq(null)
     setDecision(null)
     const persona = personas.find((p) => p.persona_id === activeId)
     if (persona) setLang(persona.language_pref)
@@ -112,8 +134,7 @@ export default function App() {
 
   function refetchNudge() {
     if (!activeId) return
-    api
-      .nudge(activeId)
+    fetchNudgeDeduped(activeId)
       .then(setDecision)
       .catch((e) => setError(String(e)))
   }
@@ -134,6 +155,11 @@ export default function App() {
     record('escalated') // routes to a human advisor — the trust-first off-ramp
   }
 
+  function openExitOptions() {
+    record('adopted') // she accepted the flag and is reviewing exit options
+    setExitOpen(true)
+  }
+
   function handlePrimary() {
     const cat = decision?.surfaced_moment?.suggested_category
     if (cat === 'insurance_compare') {
@@ -148,9 +174,34 @@ export default function App() {
       setSubscriptionOpen(true)
     } else if (cat === 'invest_shelf') {
       setInvestmentOpen(true) // adoption recorded when they start a SIP
+    } else if (cat === 'missold_review') {
+      // Assisted mode: big-ticket steps block until the guardian co-approves.
+      const gate = decision?.coconsent
+      if (gate?.required) {
+        api
+          .coconsentRequest(activeId, gate.action, gate.amount)
+          .then((r) => {
+            if (r.required && r.request) setGuardianReq(r.request)
+            else openExitOptions()
+          })
+          .catch((e) => setError(String(e)))
+      } else {
+        openExitOptions()
+      }
     } else {
       record('adopted')
     }
+  }
+
+  function decideGuardian(approve: boolean) {
+    if (!guardianReq) return
+    api
+      .coconsentDecide(guardianReq.id, approve)
+      .then((rec) => {
+        setGuardianReq(rec)
+        if (rec.status === 'approved') setExitOpen(true)
+      })
+      .catch((e) => setError(String(e)))
   }
 
   function startInvesting() {
@@ -189,6 +240,28 @@ export default function App() {
   if (comparison) {
     overlay = (
       <ComparisonTable data={comparison} onBack={() => setComparison(null)} onEscalate={escalate} />
+    )
+  } else if (exitOpen && decision?.exit_analysis) {
+    overlay = (
+      <ExitOptionsCard
+        analysis={decision.exit_analysis}
+        lang={lang}
+        onKeep={() => {
+          setExitOpen(false)
+          handleSkip() // "Keep policy" = a skip: Diya backs off this category
+        }}
+        onEscalate={escalate}
+        onBack={() => setExitOpen(false)}
+      />
+    )
+  } else if (guardianReq && decision?.coconsent && guardianReq.status !== 'approved') {
+    overlay = (
+      <GuardianWait
+        gate={decision.coconsent}
+        status={guardianReq.status === 'declined' ? 'declined' : 'pending'}
+        lang={lang}
+        onDismiss={() => setGuardianReq(null)}
+      />
     )
   } else if (walkthroughOpen && decision?.walkthrough) {
     overlay = (
@@ -307,7 +380,9 @@ export default function App() {
           </div>
         </aside>
 
-        {/* The mocked YONO phone */}
+        {/* The mocked YONO phone + always-visible attention meter */}
+        <div className="flex flex-col items-center gap-3">
+        <AttentionMeter budget={decision?.attention_budget} lang={lang} />
         <PhoneFrame overlay={overlay}>
           {active && (
             <div className="flex min-h-full flex-col bg-gradient-to-b from-yono-blue to-yono-sky">
@@ -356,6 +431,19 @@ export default function App() {
             </div>
           )}
         </PhoneFrame>
+        </div>
+
+        {/* Guardian's phone (assisted-mode co-consent, mocked) */}
+        {guardianReq && decision?.coconsent && active && (
+          <GuardianPhone
+            gate={decision.coconsent}
+            request={guardianReq}
+            personaName={active.name}
+            lang={lang}
+            onApprove={() => decideGuardian(true)}
+            onDecline={() => decideGuardian(false)}
+          />
+        )}
 
         {/* Agent decision loop */}
         {decision && <AgentDecisionLog decision={decision} onReset={resetLearning} />}

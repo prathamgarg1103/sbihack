@@ -24,7 +24,7 @@ CONTEXTUAL_MIN_AMOUNT = 5_000      # contextual spend must be at least this big
 CONTEXTUAL_WINDOW_DAYS = 30        # ...and this recent
 
 # --- Payee classification dictionaries -------------------------------------
-_SALARY_HINTS = ("SALARY", "PAYROLL", "WAGES")
+_SALARY_HINTS = ("SALARY", "PAYROLL", "WAGES", "PENSION")
 _PREMIUM_HINTS = (
     "LIFE", "INSURANCE", "PREMIUM", "ASSURANCE", "POLICY",
     "PRU", "AIA", "ALLIANZ", "MAX LIFE", "TERM PLAN",
@@ -278,6 +278,75 @@ def detect_contextual_spend(persona_id: str, txns: list[dict], now: datetime) ->
     )
 
 
+def detect_missold_product(persona: dict, txns: list[dict], now: datetime) -> AdoptionMoment | None:
+    """Reverse mis-selling (hero): a recurring premium for a product the user
+    ALREADY OWNS that fails the suitability filter — canonically a ULIP sold to
+    a low/fixed-income user. Diya flags the bank's own past sale instead of
+    hiding it. Numbers are grounded in the ULIP fact-sheet corpus doc."""
+    from engine import rag, suitability
+
+    ulip_docs = rag.docs_by_type("ulip_factsheet")
+    if not ulip_docs:
+        return None
+
+    by_payee: dict[str, list[dict]] = defaultdict(list)
+    for r in txns:
+        if r["amount"] < 0 and classify_payee(r["payee_name"]) is PayeeCategory.PREMIUM:
+            by_payee[r["payee_name"]].append(r)
+
+    for payee, rows in by_payee.items():
+        if len(rows) < RECURRING_MIN_HITS:
+            continue
+        upper = payee.upper()
+        doc = next(
+            (d for d in ulip_docs
+             if "ULIP" in upper or str(d.meta.get("payee_hint", "")).upper() in upper),
+            None,
+        )
+        if doc is None:
+            continue
+        amounts = [abs(r["amount"]) for r in rows]
+        avg = mean(amounts)
+        if avg <= 0 or (max(amounts) - min(amounts)) / avg > RECURRING_AMOUNT_TOLERANCE:
+            continue
+
+        monthly = round(avg)
+        annual = monthly * 12
+        fit = suitability.check_suitability(
+            product_type="ulip", monthly_cost=monthly, persona=persona
+        )
+        if fit["suitable"]:
+            continue  # only flag holdings that fail today's rules
+
+        income = float(persona.get("monthly_income", 0) or 0)
+        income_pct = round(monthly / income * 100) if income else None
+        title = str(doc.meta.get("title", "this policy")).split("—")[0].strip()
+        return AdoptionMoment(
+            trigger_type=TriggerType.MISSOLD_PRODUCT,
+            persona_id=persona["persona_id"],
+            title="A policy you hold looks unsuitable for you",
+            summary=(
+                f"You pay ₹{monthly:,}/month for {title} — a ULIP. It fails the "
+                "suitability rules we apply today. You may have exit options."
+            ),
+            severity="high",
+            suggested_category="missold_review",
+            evidence={
+                "product": title,
+                "doc_id": doc.id,
+                "raw_payee": payee,
+                "monthly_premium": monthly,
+                "annual_premium": annual,
+                "months_paid": len(rows),
+                "paid_so_far": monthly * len(rows),
+                "income_pct": income_pct,
+                "suitability_blocks": fit["blocks"],
+            },
+            evidence_txn_ids=[r["txn_id"] for r in rows[-3:]],
+        )
+    return None
+
+
 _DETECTORS = (
     detect_idle_balance,
     detect_premium_leak,
@@ -305,6 +374,9 @@ def detect_all_moments(
     from engine import feature_blindspot, subscription_detector
 
     moments = detect_all(persona["persona_id"], txns, now)
+    missold = detect_missold_product(persona, txns, now)
+    if missold is not None:
+        moments.append(missold)
     for meta_detect in (feature_blindspot.detect, subscription_detector.detect):
         moment = meta_detect(persona)
         if moment is not None:
